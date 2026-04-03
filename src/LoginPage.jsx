@@ -62,7 +62,7 @@ const LoginPage = () => {
                 >
                     <div style={{ width: '600px' }}>
 
-                        <h2 style={{ marginBottom: '30px' }}>Welcome Back</h2>
+                        <h2 style={{ marginBottom: '30px', color: '#333333' }}>Welcome Back</h2>
 
                         <Authenticator
                             loginMechanisms={['email']}
