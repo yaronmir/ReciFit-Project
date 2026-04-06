@@ -19,6 +19,7 @@ const theme = {
 };
 
 const LoginPage = () => {
+
     return (
         <ThemeProvider theme={theme}>
             <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
