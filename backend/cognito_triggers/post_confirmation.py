@@ -6,7 +6,7 @@ import datetime
 dynamodb = boto3.resource('dynamodb')
 
 # It's best practice to pass the table name as an Environment Variable
-TABLE_NAME = os.environ.get('USERS_TABLE_NAME', 'ReciFitUsers')
+TABLE_NAME = os.environ.get('USERS_TABLE_NAME', 'Users')
 table = dynamodb.Table(TABLE_NAME)
 
 def lambda_handler(event, context):

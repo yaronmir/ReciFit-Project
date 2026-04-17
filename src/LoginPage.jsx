@@ -70,18 +70,18 @@ const MainView = () => {
                 width: '100%',
                 padding: '20px'
             }}>
-                <h1 style={{ 
-                    fontSize: '60px', 
-                    color: 'white', 
+                <h1 style={{
+                    fontSize: '60px',
+                    color: 'white',
                     marginBottom: '10px',
                     textShadow: '0 4px 10px rgba(0,0,0,0.5)'
                 }}>
                     ReciFit
                 </h1>
-                
-                <p style={{ 
-                    color: '#f0f0f0', 
-                    fontSize: '18px', 
+
+                <p style={{
+                    color: '#f0f0f0',
+                    fontSize: '18px',
                     marginBottom: '40px',
                     textShadow: '0 2px 5px rgba(0,0,0,0.5)',
                     textAlign: 'center'
@@ -96,8 +96,7 @@ const MainView = () => {
                         loginMechanisms={['email']}
                     />
                 </div>
-            </div>
-        </div>
+            </div>        </div>
     );
 };
 
