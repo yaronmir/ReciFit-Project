@@ -11,20 +11,16 @@ body {
 }
 
 .dashboard-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: block;
+  width: 100%;
   min-height: 100vh;
+  height: 100dvh;
 }
 
 .dashboard-mobile-frame {
   background-color: #f9f9fb;
   width: 100%;
-  max-width: 400px;
-  height: 100vh;
-  /* On larger screens it looks like a phone, on small screens it fills */
-  border-radius: 0px; 
-  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
@@ -32,10 +28,17 @@ body {
   flex-direction: column;
 }
 
-@media (min-width: 500px) {
-  .dashboard-mobile-frame {
-    height: 850px;
-    border-radius: 40px;
+/* Center and constrain content beautifully on big screens naturally */
+@media (min-width: 768px) {
+  .dashboard-content {
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .dashboard-header {
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
   }
 }
 

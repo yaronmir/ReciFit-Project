@@ -46,7 +46,8 @@ const MainView = () => {
         <div style={{
             position: 'relative',
             minHeight: '100vh',
-            width: '100vw',
+            height: '100dvh',
+            width: '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import './Dashboard.css';
+import EditProfile from './EditProfile';
 
 const Dashboard = ({ user, signOut }) => {
   // UI State for the hamburger menu
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [currentView, setCurrentView] = useState('dashboard');
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -19,6 +21,46 @@ const Dashboard = ({ user, signOut }) => {
     { name: 'Fats', icon: '🥑', eaten: 0, goal: 65, unit: 'g', cardClass: 'fats-card' }
   ];
 
+  if (currentView === 'editProfile') {
+    return (
+      <EditProfile 
+        user={user} 
+        onCancel={() => setCurrentView('dashboard')} 
+        onSave={async (updatedData) => {
+          try {
+            // We use the ID that Cognito gave us upon login!
+            const userId = user?.userId || user?.signInDetails?.loginId;
+            
+            // NOTE: Replace this with your actual API Gateway URL!
+            const API_URL = "https://6to6ha1kul.execute-api.us-east-1.amazonaws.com/profile";
+            
+            const response = await fetch(API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: userId,
+                updates: updatedData
+              })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+              console.log("Profile saved!", data);
+              alert("Profile successfully updated on AWS!");
+              setCurrentView('dashboard');
+            } else {
+              alert("Error saving profile: " + data.error);
+            }
+          } catch (error) {
+            console.error("Fetch error:", error);
+            alert("Failed to connect to the server.");
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <div className="dashboard-wrapper">
       <div className="dashboard-mobile-frame">
@@ -30,6 +72,10 @@ const Dashboard = ({ user, signOut }) => {
             <p>Ready to crush it,</p>
             <h3>{user?.signInDetails?.loginId || 'User'}!</h3>
           </div>
+          
+          <button className="menu-item" onClick={() => { setCurrentView('editProfile'); setIsMenuOpen(false); }}>
+            <span>✏️</span> Edit Profile
+          </button>
           
           <button className="menu-item" onClick={() => alert("BMI Calculator coming soon!")}>
             <span>⚖️</span> Calculate BMI

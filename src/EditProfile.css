@@ -1,0 +1,198 @@
+.edit-profile-container {
+  width: 100%;
+  min-height: 100vh;
+  height: 100dvh;
+  background-color: #121212;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: #fff;
+}
+
+.edit-profile-split {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  max-width: 1200px;
+  background-color: #1a1a1a;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 768px) {
+  .edit-profile-split {
+    height: 90vh;
+    border-radius: 20px;
+    overflow: hidden;
+  }
+}
+
+/* Left Image Panel */
+.edit-profile-image-panel {
+  flex: 1;
+  background: url('https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=2070&auto=format&fit=crop') no-center center / cover;
+  position: relative;
+  display: none; /* Hide on mobile */
+}
+
+@media (min-width: 768px) {
+  .edit-profile-image-panel {
+    display: block;
+  }
+}
+
+.image-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 40px;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+}
+
+.image-headline {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  margin: 0 0 10px 0;
+  line-height: 1.1;
+  color: #EAEAEA;
+}
+
+.image-subhead {
+  color: #A0A0A0;
+  font-size: 1.1rem;
+}
+
+/* Right Form Panel */
+.edit-profile-form-panel {
+  flex: 1;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-color: #161618;
+  overflow-y: auto;
+}
+
+@media (min-width: 768px) {
+  .edit-profile-form-panel {
+    padding: 40px;
+  }
+}
+
+.form-title {
+  font-size: 2rem;
+  margin: 0 0 10px 0;
+  color: #FFFFFF;
+}
+
+.form-subtitle {
+  color: #888;
+  margin-bottom: 40px;
+  font-size: 0.95rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 25px;
+  width: 100%;
+}
+
+.form-group-row {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+@media (min-width: 768px) {
+  .form-group-row {
+    flex-direction: row;
+    gap: 20px;
+  }
+}
+
+.form-group-row .form-group {
+  flex: 1;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  color: #A0A0A0;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  background-color: #222224;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #FFF;
+  padding: 14px 16px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #FF5A1F; /* A vibrant orange brand color */
+  background-color: #2A2A2E;
+}
+
+.form-group input::placeholder {
+  color: #555;
+}
+
+/* Actions */
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+@media (min-width: 768px) {
+  .form-actions {
+    flex-direction: row;
+  }
+}
+
+.btn-cancel,
+.btn-save {
+  flex: 1;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.btn-cancel {
+  background-color: transparent;
+  border: 1px solid #444;
+  color: #CCC;
+}
+
+.btn-cancel:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.btn-save {
+  background-color: #FF5A1F;
+  color: #FFF;
+  box-shadow: 0 4px 15px rgba(255, 90, 31, 0.3);
+}
+
+.btn-save:hover {
+  background-color: #FF6E3A;
+  box-shadow: 0 6px 20px rgba(255, 90, 31, 0.4);
+}
+
+.btn-save:active {
+  transform: scale(0.98);
+}
