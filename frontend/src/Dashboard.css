@@ -28,17 +28,51 @@ body {
   flex-direction: column;
 }
 
-/* Center and constrain content beautifully on big screens naturally */
-@media (min-width: 768px) {
+/* RESPONSIVE DESKTOP LAYOUT */
+@media (min-width: 900px) {
+  /* 1. Sidebar Space Reservation */
+  .dashboard-mobile-frame {
+    padding-left: 250px; /* Leave exactly 250px blank on the left so content isn't covered */
+  }
+
+  /* 2. Grid Setup */
   .dashboard-content {
-    max-width: 900px;
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+    
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    grid-auto-rows: min-content;
+    column-gap: 40px;
+    row-gap: 15px;
+    align-items: stretch;
+  }
+
+  .dashboard-header {
+    max-width: 1100px;
     margin: 0 auto;
     width: 100%;
   }
-  .dashboard-header {
-    max-width: 900px;
-    margin: 0 auto;
-    width: 100%;
+
+  /* 3. Grid Positioning */
+  .daily-progress-card {
+    grid-column: 1 / 2;
+    grid-row: 1 / 5;
+    margin-bottom: 0 !important;
+    height: 100%; /* Stretch to fill */
+  }
+
+  .section-title {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+    margin-bottom: 5px !important;
+    align-self: center;
+  }
+
+  .nutrition-card {
+    grid-column: 2 / 3;
+    margin-bottom: 0 !important;
   }
 }
 
@@ -100,6 +134,23 @@ body {
 
 .sidebar.open {
   left: 0;
+}
+
+/* KEEP SIDEBAR OPEN ON DESKTOP */
+@media (min-width: 900px) {
+  .sidebar {
+    left: 0 !important;
+    position: fixed; /* Fix to viewport so it never scrolls away */
+    box-shadow: 1px 0 0 #e8e8ed; /* Clean border instead of heavy shadow */
+  }
+  
+  /* Hide Mobile Menu elements on Desktop */
+  .icon-button {
+    display: none !important;
+  }
+  .menu-overlay {
+    display: none !important;
+  }
 }
 
 .menu-overlay {
