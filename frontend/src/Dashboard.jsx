@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './Dashboard.css';
 import EditProfile from './EditProfile';
+import BMICalculator from './BMICalculator';
+import BMRCalculator from './BMRCalculator';
 
 const Dashboard = ({ user, signOut }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -17,19 +19,32 @@ const Dashboard = ({ user, signOut }) => {
         { name: 'Fats', icon: '🥑', eaten: 0, goal: 65, unit: 'g', cardClass: 'fats-card' }
     ];
 
+    // בדיקת ניווט לפני הרינדור המרכזי
     if (currentView === 'editProfile') {
         return (
             <EditProfile
                 user={user}
                 onCancel={() => setCurrentView('dashboard')}
-                onSave={() => { /* Your existing save logic here */ }}
+                onSave={(data) => {
+                    console.log("Saving profile:", data);
+                    setCurrentView('dashboard');
+                }}
             />
         );
     }
 
+    if (currentView === 'BMICalculator') {
+        return <BMICalculator onBack={() => setCurrentView('dashboard')} />;
+    }
+
+    if (currentView === 'BMRCalculator') {
+        return <BMRCalculator onBack={() => setCurrentView('dashboard')} />;
+    }
+
+    // רינדור ה-Dashboard
     return (
         <div className="dashboard-wrapper">
-            {/* Sidebar / Slider Bar */}
+            {/* Sidebar & Overlay */}
             <div className={`menu-overlay ${isMenuOpen ? 'open' : ''}`} onClick={toggleMenu}></div>
             <div className={`sidebar ${isMenuOpen ? 'open' : ''}`}>
                 <div className="menu-profile">
@@ -41,23 +56,20 @@ const Dashboard = ({ user, signOut }) => {
                     <button className="menu-item" onClick={() => { setCurrentView('editProfile'); setIsMenuOpen(false); }}>
                         <span>✏️</span> Edit Profile
                     </button>
-
-                    <button className="menu-item" onClick={() => alert("BMI coming soon!")}>
+                    <button className="menu-item" onClick={() => { setCurrentView('BMICalculator'); setIsMenuOpen(false); }}>
                         <span>⚖️</span> Calculate BMI
                     </button>
-
-                    <button className="menu-item" onClick={() => alert("NMR coming soon!")}>
-                        <span>🔥</span> Calculate NMR
+                    <button className="menu-item" onClick={() => { setCurrentView('BMRCalculator'); setIsMenuOpen(false); }}>
+                        <span>🔥</span> Calculate BMR
                     </button>
-
                     <button className="menu-item" onClick={() => alert("New Recipe coming soon!")}>
                         <span>🍽️</span> New Recipe
                     </button>
-                </div>
 
-                <button className="menu-item logout" onClick={signOut}>
-                    <span>🚪</span> Log Out
-                </button>
+                    <button className="menu-item logout" onClick={signOut}>
+                        <span>🚪</span> Log Out
+                    </button>
+                </div>
             </div>
 
             {/* Main Dashboard Area */}
@@ -69,7 +81,7 @@ const Dashboard = ({ user, signOut }) => {
                 </div>
 
                 <div className="dashboard-content">
-                    {/* Your Original Progress Wheel */}
+                    {/* Progress Wheel */}
                     <div className="daily-progress-card">
                         <h3 className="progress-title">DAILY PROGRESS</h3>
                         <div className="progress-ring-container">
@@ -85,7 +97,7 @@ const Dashboard = ({ user, signOut }) => {
 
                     <h3 className="section-title">Nutrition Breakdown</h3>
 
-                    {/* Row of Macros */}
+                    {/* Macros Row */}
                     <div className="macros-row">
                         {macros.map((macro, index) => (
                             <div className={`nutrition-card ${macro.cardClass || ''}`} key={index}>
