@@ -25,9 +25,31 @@ const Dashboard = ({ user, signOut }) => {
             <EditProfile
                 user={user}
                 onCancel={() => setCurrentView('dashboard')}
-                onSave={(data) => {
-                    console.log("Saving profile:", data);
-                    setCurrentView('dashboard');
+                onSave={async (updatedData) => {
+                    try {
+                        const userId = user?.userId || user?.signInDetails?.loginId;
+                        const API_URL = "https://6to6ha1kul.execute-api.us-east-1.amazonaws.com/profile";
+                        
+                        const response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userId: userId,
+                                updates: updatedData
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            alert("Profile successfully updated on AWS DynamoDB!");
+                            setCurrentView('dashboard');
+                        } else {
+                            const data = await response.json();
+                            alert("Error saving profile: " + data.error);
+                        }
+                    } catch (error) {
+                        console.error("Fetch error:", error);
+                        alert("Failed to connect to the AWS server.");
+                    }
                 }}
             />
         );

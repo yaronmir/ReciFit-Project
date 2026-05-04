@@ -158,6 +158,9 @@
   box-shadow: 0px 4px 10px rgba(0,0,0,0.03);
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: fit-content;
+  margin: 0 auto; /* Center perfectly */
   gap: 8px;
 }
 
@@ -170,23 +173,23 @@
 }
 
 .nutrition-card {
-  background-color: #f1ecff;
+  background-color: #8b5cf6; /* Vibrant purple */
   border-radius: 20px;
   padding: 15px 20px;
   display: flex;
   align-items: center;
   margin-bottom: 15px;
-  box-shadow: 0px 2px 5px rgba(0,0,0,0.01);
+  box-shadow: 0px 10px 25px rgba(139, 92, 246, 0.25);
 }
 
 .nutrition-card.fats-card {
-  background-color: #fdf3f5;
+  background-color: #8b5cf6; /* Keep all vibrant purple */
 }
 
 .icon-wrapper {
   width: 45px;
   height: 45px;
-  background-color: #e6e0f2;
+  background-color: rgba(255, 255, 255, 0.25); /* Bright white glass */
   border-radius: 50%;
   display: flex;
   justify-content: center;
@@ -196,7 +199,7 @@
 }
 
 .fats-card .icon-wrapper {
-  background-color: #f7e6e9;
+  background-color: rgba(255, 255, 255, 0.25);
 }
 
 .nutrition-info {
@@ -205,13 +208,13 @@
 
 .nutrition-name {
   font-weight: 700;
-  color: #2b2b3b;
+  color: white;
   font-size: 16px;
   margin: 0 0 2px 0;
 }
 
 .nutrition-goal {
-  color: #777;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 12px;
   font-weight: 600;
   margin: 0;
@@ -220,9 +223,51 @@
 .nutrition-value {
   font-size: 18px;
   font-weight: 800;
-  color: #2b2b3b;
+  color: white;
 }
 
 .nutrition-unit {
   font-size: 14px;
+}
+
+/* ================================== */
+/* NEW STYLES TO FIX MISSING ELEMENTS */
+/* ================================== */
+
+.daily-progress-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.progress-title {
+  color: #5b5bd6;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  font-size: 14px;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.icon-button {
+  background: #f1ecff;
+  border: none;
+  font-size: 20px;
+  color: #5b5bd6;
+  cursor: pointer;
+  padding: 12px 15px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(91, 91, 214, 0.1);
+  transition: background 0.2s, transform 0.1s;
+}
+
+.icon-button:hover {
+  background: #e6e0f2;
+  transform: scale(1.05);
 }
