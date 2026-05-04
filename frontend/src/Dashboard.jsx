@@ -3,6 +3,7 @@ import './Dashboard.css';
 import EditProfile from './EditProfile';
 import BMICalculator from './BMICalculator';
 import BMRCalculator from './BMRCalculator';
+import { API_URL } from './config';
 
 const Dashboard = ({ user, signOut }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -27,10 +28,17 @@ const Dashboard = ({ user, signOut }) => {
                 onCancel={() => setCurrentView('dashboard')}
                 onSave={async (updatedData) => {
                     try {
-                        const userId = user?.userId || user?.signInDetails?.loginId;
-                        const API_URL = "https://6to6ha1kul.execute-api.us-east-1.amazonaws.com/profile";
+                        const userId = user?.userId || user?.username || user?.signInDetails?.loginId || user?.attributes?.sub;
                         
-                        const response = await fetch(API_URL, {
+                        if (!userId) {
+                            alert("Security Error: Could not verify your User ID. Please log out and log back in.");
+                            console.error("User object missing ID:", user);
+                            return;
+                        }
+                        
+                        const endpoint = `${API_URL}/profile`;
+                        
+                        const response = await fetch(endpoint, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -48,7 +56,7 @@ const Dashboard = ({ user, signOut }) => {
                         }
                     } catch (error) {
                         console.error("Fetch error:", error);
-                        alert("Failed to connect to the AWS server.");
+                        alert("Failed to connect to the AWS server. Error: " + error.message);
                     }
                 }}
             />

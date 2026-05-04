@@ -15,13 +15,19 @@ class LambdaManager:
     @staticmethod
     def parse_event(event):
         """Extracts useful info from an API Gateway Lambda Proxy event."""
+        import base64
+        
         # Parse body
         body = {}
         if event.get('body'):
             try:
                 body_string = event['body']
-                # If API Gateway proxy integration encodes it in base64 occasionally, 
-                # be mindful, but usually it's just a stringified JSON.
+                
+                # AWS HTTP APIs often encode the payload in base64. 
+                # If we don't decode it, the JSON parse fails and we lose the userId!
+                if event.get('isBase64Encoded'):
+                    body_string = base64.b64decode(body_string).decode('utf-8')
+                    
                 body = json.loads(body_string)
             except Exception as e:
                 print(f"Failed to parse body: {e}")

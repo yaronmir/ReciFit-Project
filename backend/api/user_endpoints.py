@@ -60,7 +60,7 @@ def update_user_profile(event, context):
             user_id = parsed['body']['userId']
             
         if not user_id:
-            return LambdaManager.error_response("Missing userId parameter or unauthorized request", 401)
+            return LambdaManager.error_response(f"Missing userId parameter. DEBUG EVENT: {str(event)}", 401)
             
         updates = parsed['body'].get('updates', {})
         if not updates:
