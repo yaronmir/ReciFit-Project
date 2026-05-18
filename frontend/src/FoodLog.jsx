@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { API_URL } from './config';
 import './FoodLog.css';
 
-const FoodLog = ({ user, onBack }) => {
+const FoodLog = ({ user, onBack, onFoodLogged }) => {
     const [foodDescription, setFoodDescription] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState(null);
@@ -36,6 +36,10 @@ const FoodLog = ({ user, onBack }) => {
             if (response.ok) {
                 setResult(data);
                 setFoodDescription('');
+                // Notify Dashboard to update live calorie/macro tracking
+                if (onFoodLogged && data.totals) {
+                    onFoodLogged(data.totals);
+                }
             } else {
                 setError(data.error || `Server error ${response.status}. Please try again.`);
             }
