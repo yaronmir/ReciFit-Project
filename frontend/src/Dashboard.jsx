@@ -68,6 +68,14 @@ const Dashboard = ({ user, signOut }) => {
                     const p = data.user || {};
                     setProfile(p);
                     setGoals(calculateGoals(p));
+
+                    // Restore today's eaten progress from DynamoDB
+                    setEaten({
+                        calories: parseFloat(p.DailyCalories) || 0,
+                        protein:  parseFloat(p.DailyProtein)  || 0,
+                        carbs:    parseFloat(p.DailyCarbs)    || 0,
+                        fats:     parseFloat(p.DailyFats)     || 0,
+                    });
                 }
             } catch (e) {
                 console.error('Failed to fetch profile:', e);
