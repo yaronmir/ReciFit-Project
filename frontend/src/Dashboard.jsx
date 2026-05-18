@@ -43,13 +43,18 @@ function calculateGoals(profile) {
 const Dashboard = ({ user, signOut }) => {
     const [isMenuOpen, setIsMenuOpen]     = useState(false);
     const [currentView, setCurrentView]   = useState('dashboard');
-    const [profile, setProfile]           = useState(null);   // raw profile from DB
+    const [profile, setProfile]           = useState(null);
     const [goals, setGoals]               = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
-
-    // Eaten today (starts at 0, increases when food is logged)
-    const [eaten, setEaten] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
+    const [eaten, setEaten]               = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
+    const [isDarkMode, setIsDarkMode]     = useState(() => localStorage.getItem('recifit-dark') === 'true');
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+    const toggleDark = () => {
+        setIsDarkMode(prev => {
+            localStorage.setItem('recifit-dark', !prev);
+            return !prev;
+        });
+    };
 
     // ── Fetch profile on mount ─────────────────────────────────────────────
     useEffect(() => {
@@ -134,7 +139,7 @@ const Dashboard = ({ user, signOut }) => {
     const ringOffset = ringDash - (ringPercent / 100) * ringDash;
 
     return (
-        <div className="dashboard-wrapper">
+        <div className={`dashboard-wrapper${isDarkMode ? ' dark' : ''}`}>
             {/* Sidebar & Overlay */}
             <div className={`menu-overlay ${isMenuOpen ? 'open' : ''}`} onClick={toggleMenu}></div>
             <div className={`sidebar ${isMenuOpen ? 'open' : ''}`}>
@@ -171,7 +176,9 @@ const Dashboard = ({ user, signOut }) => {
                 <div className="dashboard-header">
                     <button className="icon-button" onClick={toggleMenu}>☰</button>
                     <h2 className="dashboard-title">RECIFIT HUB</h2>
-                    <div className="profile-icon">👤</div>
+                    <button className="dark-mode-btn" onClick={toggleDark} title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+                        {isDarkMode ? '☀️' : '🌙'}
+                    </button>
                 </div>
 
                 <div className="dashboard-content">
@@ -181,7 +188,7 @@ const Dashboard = ({ user, signOut }) => {
                         <div className="progress-ring-container">
                             {/* Animated SVG ring */}
                             <svg className="progress-svg" viewBox="0 0 120 120">
-                                <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10"/>
+                                <circle cx="60" cy="60" r="54" fill="none" stroke="#e9d8fd" strokeWidth="10"/>
                                 <circle
                                     cx="60" cy="60" r="54" fill="none"
                                     stroke="url(#ringGrad)" strokeWidth="10"

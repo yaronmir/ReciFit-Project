@@ -2,7 +2,7 @@
 .dashboard-wrapper {
   display: flex;
   min-height: 100vh;
-  background-color: #f4f7f6;
+  background: linear-gradient(135deg, #ede9fe 0%, #dbeafe 50%, #fce7f3 100%);
   width: 100%;
 }
 
@@ -12,21 +12,22 @@
   flex-direction: column;
 }
 
-/* Sidebar & Options with Margins */
+/* Sidebar */
 .sidebar {
   position: fixed;
   left: 0;
   top: 0;
   height: 100%;
   width: 280px;
-  background: #111;
+  background: linear-gradient(180deg, #1a1030 0%, #0f0820 100%);
   color: white;
   z-index: 1001;
   transform: translateX(-100%);
   transition: transform 0.3s ease;
-  padding: 40px 20px;
+  padding: 40px 20px 30px;
   display: flex;
   flex-direction: column;
+  box-shadow: 4px 0 30px rgba(124, 58, 237, 0.3);
 }
 
 .sidebar.open {
@@ -34,34 +35,44 @@
 }
 
 .sidebar-links {
-  margin-top: 30px;
+  margin-top: 20px;
   flex-grow: 1;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 15px;
-  background: #222; /* Darker tile look */
-  border: none;
-  color: white;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255,255,255,0.85);
   width: 100%;
-  padding: 15px;
-  margin-bottom: 12px; /* Margin between options */
+  padding: 14px 16px;
+  margin-bottom: 10px;
   border-radius: 12px;
   cursor: pointer;
   text-align: left;
-  transition: background 0.2s;
+  font-size: 15px;
+  transition: all 0.2s ease;
 }
 
 .menu-item:hover {
-  background: #333;
+  background: rgba(167, 139, 250, 0.15);
+  border-color: rgba(167, 139, 250, 0.3);
+  color: #fff;
+  transform: translateX(3px);
 }
 
 .logout {
-  background: #ff4d4d22;
-  color: #ff4d4d;
-  margin-top: auto;
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  margin-top: 0;
+}
+
+.logout:hover {
+  background: rgba(239, 68, 68, 0.15);
+  transform: translateX(3px);
 }
 
 /* Header */
@@ -69,38 +80,40 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 5%;
-  background: #fff;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  padding: 16px 32px;
+  background: rgba(255, 255, 255, 0.6);
+  border-bottom: 1px solid rgba(167, 139, 250, 0.2);
+  box-shadow: 0 2px 12px rgba(124, 58, 237, 0.08);
 }
 
-/* Responsive Content */
+/* Content */
 .dashboard-content {
-  padding: 20px 5%;
-  max-width: 1200px;
+  padding: 32px 5%;
+  max-width: 900px;
   margin: 0 auto;
   width: 100%;
 }
 
 .macros-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* Force 3 columns */
-  gap: 15px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
   margin-top: 15px;
 }
 
-/* Mobile Fix for Macros */
 @media (max-width: 768px) {
   .macros-row {
-    grid-template-columns: 1fr; /* Stack on phones */
+    grid-template-columns: 1fr;
   }
 }
 
-/* Overlay for Sidebar */
+/* Overlay */
 .menu-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(79, 50, 150, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: none;
   z-index: 1000;
 }
@@ -108,6 +121,7 @@
 .menu-overlay.open {
   display: block;
 }
+
 .progress-ring-container {
   position: relative;
   width: 160px;
@@ -241,16 +255,24 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  border-radius: 24px;
+  padding: 36px 24px;
+  border: 1px solid rgba(124, 58, 237, 0.12);
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.1), 0 2px 8px rgba(0,0,0,0.04);
+  position: relative;
 }
 
+
 .progress-title {
-  color: #5b5bd6;
+  color: #7c3aed;
   font-weight: 800;
-  letter-spacing: 1.5px;
-  font-size: 14px;
-  margin-bottom: 25px;
-  text-align: center;
+  letter-spacing: 2px;
+  font-size: 11px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
 }
 
 .icon-button {
@@ -301,4 +323,101 @@
 
 .profile-icon {
   font-size: 24px;
+}
+
+.dark-mode-btn {
+  background: #f1ecff;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 10px 14px;
+  border-radius: 12px;
+  transition: background 0.2s, transform 0.1s;
+  line-height: 1;
+}
+
+.dark-mode-btn:hover {
+  background: #e6e0f2;
+  transform: scale(1.1);
+}
+
+.dashboard-wrapper.dark .dark-mode-btn {
+  background: rgba(124, 58, 237, 0.2);
+}
+
+/* ==============================
+   DARK MODE
+   ============================== */
+.dashboard-wrapper.dark {
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a1030 50%, #0d1117 100%);
+}
+
+.dashboard-wrapper.dark .dashboard-header {
+  background: rgba(15, 15, 26, 0.85);
+  border-bottom: 1px solid rgba(167, 139, 250, 0.15);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-wrapper.dark .dashboard-title {
+  color: #e9d8fd;
+}
+
+.dashboard-wrapper.dark .icon-button {
+  background: rgba(124, 58, 237, 0.2);
+  color: #a78bfa;
+}
+
+.dashboard-wrapper.dark .daily-progress-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(167, 139, 250, 0.1);
+}
+
+.dashboard-wrapper.dark .progress-title {
+  color: #a78bfa;
+}
+
+.dashboard-wrapper.dark .calories-number {
+  color: #f3f0ff;
+}
+
+.dashboard-wrapper.dark .calories-label {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Ring track color in dark mode */
+.dashboard-wrapper.dark .progress-svg circle:first-child {
+  stroke: rgba(167, 139, 250, 0.15);
+}
+
+.dashboard-wrapper.dark .goal-badge {
+  background: rgba(124, 58, 237, 0.15);
+  color: #c4b5fd;
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  box-shadow: none;
+}
+
+.dashboard-wrapper.dark .section-title {
+  color: #e9d8fd;
+}
+
+.dashboard-wrapper.dark .nutrition-card {
+  background-color: rgba(124, 58, 237, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+}
+
+.dashboard-wrapper.dark .dashboard-content {
+  /* content stays the same — cards handle their own dark */
+}
+
+/* Dark mode toggle button style */
+.menu-item.dark-toggle {
+  background: rgba(167, 139, 250, 0.1);
+  border-color: rgba(167, 139, 250, 0.2);
+  color: #c4b5fd;
+}
+
+.menu-item.dark-toggle:hover {
+  background: rgba(167, 139, 250, 0.2);
 }
