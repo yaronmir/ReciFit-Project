@@ -7,17 +7,23 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.db_manager import DbManager
 from core.lambda_manager import LambdaManager
+from api.food_endpoints import log_food
 
 # Initialize DbManager outside the handler so AWS Lambda can reuse the connection
 db = DbManager()
 
 def lambda_handler(event, context):
     """
-    Main Router: Directs traffic based on the HTTP Method (GET vs POST).
+    Main Router: Directs traffic based on HTTP Method and path.
     """
-    # The HTTP API Gateway provides the method in requestContext.http.method
     method = event.get('requestContext', {}).get('http', {}).get('method', 'GET')
-    
+    path = event.get('rawPath', '')
+
+    # Route: /log-food  (POST)
+    if path.endswith('/log-food') and method == 'POST':
+        return log_food(event, context)
+
+    # Route: /profile  (GET or POST)
     if method == 'GET':
         return get_user_profile(event, context)
     elif method == 'POST':

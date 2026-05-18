@@ -1,0 +1,275 @@
+/* ==============================
+   FOOD LOG - STYLES
+   ============================== */
+
+.foodlog-wrapper {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f0f1a 0%, #1a1030 50%, #0f0f1a 100%);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px 48px;
+}
+
+.foodlog-container {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Header */
+.foodlog-header {
+    text-align: center;
+}
+
+.back-button {
+    background: none;
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    color: #a78bfa;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    transition: all 0.2s ease;
+}
+
+.back-button:hover {
+    background: rgba(167, 139, 250, 0.1);
+    border-color: #a78bfa;
+}
+
+.foodlog-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 8px;
+}
+
+.foodlog-subtitle {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Input Section */
+.foodlog-input-section {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(167, 139, 250, 0.2);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.input-label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.food-textarea {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(167, 139, 250, 0.25);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 1rem;
+    padding: 14px;
+    resize: none;
+    transition: border-color 0.2s ease;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+.food-textarea:focus {
+    outline: none;
+    border-color: #a78bfa;
+    background: rgba(167, 139, 250, 0.08);
+}
+
+.food-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.food-textarea:disabled {
+    opacity: 0.5;
+}
+
+.log-button {
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.5px;
+}
+
+.log-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.45);
+}
+
+.log-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.loading-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Error */
+.foodlog-error {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    color: #fca5a5;
+    padding: 14px 18px;
+    font-size: 0.9rem;
+}
+
+/* Results */
+.foodlog-results {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(167, 139, 250, 0.25);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-message {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(167, 139, 250, 0.08));
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    border-radius: 12px;
+    color: #c4b5fd;
+    padding: 14px 18px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* Totals Grid */
+.totals-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.total-card {
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.total-card.calories { background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.25); }
+.total-card.protein  { background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.25); }
+.total-card.carbs    { background: rgba(96, 165, 250, 0.12); border: 1px solid rgba(96, 165, 250, 0.25); }
+.total-card.fats     { background: rgba(251, 113, 133, 0.12); border: 1px solid rgba(251, 113, 133, 0.25); }
+
+.total-value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.total-label {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Breakdown */
+.breakdown-title {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.food-item-row {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.item-name-amount {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.item-name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-transform: capitalize;
+}
+
+.item-amount {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.8rem;
+}
+
+.item-macros {
+    display: flex;
+    gap: 12px;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.saved-note {
+    text-align: center;
+    color: #6ee7b7;
+    font-size: 0.85rem;
+    margin: 0;
+}

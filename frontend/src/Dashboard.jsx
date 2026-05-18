@@ -3,6 +3,7 @@ import './Dashboard.css';
 import EditProfile from './EditProfile';
 import BMICalculator from './BMICalculator';
 import BMRCalculator from './BMRCalculator';
+import FoodLog from './FoodLog';
 import { API_URL } from './config';
 
 const Dashboard = ({ user, signOut }) => {
@@ -71,6 +72,10 @@ const Dashboard = ({ user, signOut }) => {
         return <BMRCalculator onBack={() => setCurrentView('dashboard')} />;
     }
 
+    if (currentView === 'foodLog') {
+        return <FoodLog user={user} onBack={() => setCurrentView('dashboard')} />;
+    }
+
     // רינדור ה-Dashboard
     return (
         <div className="dashboard-wrapper">
@@ -91,6 +96,9 @@ const Dashboard = ({ user, signOut }) => {
                     </button>
                     <button className="menu-item" onClick={() => { setCurrentView('BMRCalculator'); setIsMenuOpen(false); }}>
                         <span>🔥</span> Calculate BMR
+                    </button>
+                    <button className="menu-item" onClick={() => { setCurrentView('foodLog'); setIsMenuOpen(false); }}>
+                        <span>🍎</span> Log Food (AI)
                     </button>
                     <button className="menu-item" onClick={() => alert("New Recipe coming soon!")}>
                         <span>🍽️</span> New Recipe
