@@ -114,11 +114,24 @@ def log_food(event, context):
         nutrition_data = call_openai(api_key, food_description)
 
         # Get current daily totals from DB so we can ADD to them (not replace)
+        from datetime import datetime, timezone
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
         current_user = db.get_user(user_id) or {}
-        current_calories = float(current_user.get("DailyCalories", 0) or 0)
-        current_protein  = float(current_user.get("DailyProtein",  0) or 0)
-        current_carbs    = float(current_user.get("DailyCarbs",    0) or 0)
-        current_fats     = float(current_user.get("DailyFats",     0) or 0)
+        last_log_date = current_user.get("LastLogDate", "")
+
+        # If it's a new day, start fresh from 0 (daily reset)
+        if last_log_date == today:
+            current_calories = float(current_user.get("DailyCalories", 0) or 0)
+            current_protein  = float(current_user.get("DailyProtein",  0) or 0)
+            current_carbs    = float(current_user.get("DailyCarbs",    0) or 0)
+            current_fats     = float(current_user.get("DailyFats",     0) or 0)
+        else:
+            # New day — reset to 0 before adding today's food
+            current_calories = 0
+            current_protein  = 0
+            current_carbs    = 0
+            current_fats     = 0
 
         new_calories = current_calories + nutrition_data["total_calories"]
         new_protein  = current_protein  + nutrition_data["total_protein"]
@@ -131,6 +144,7 @@ def log_food(event, context):
             "DailyProtein":  Decimal(str(round(new_protein,  1))),
             "DailyCarbs":    Decimal(str(round(new_carbs,    1))),
             "DailyFats":     Decimal(str(round(new_fats,     1))),
+            "LastLogDate":   today,
         })
 
         return LambdaManager.success_response({

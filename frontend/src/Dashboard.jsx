@@ -69,12 +69,17 @@ const Dashboard = ({ user, signOut }) => {
                     setProfile(p);
                     setGoals(calculateGoals(p));
 
-                    // Restore today's eaten progress from DynamoDB
+                    // Daily reset: check if the last log was today (UTC)
+                    const today = new Date().toISOString().split('T')[0]; // "2026-05-19"
+                    const lastLogDate = p.LastLogDate || '';
+                    const isToday = lastLogDate === today;
+
+                    // Only restore progress if it was logged today — otherwise reset to 0
                     setEaten({
-                        calories: parseFloat(p.DailyCalories) || 0,
-                        protein:  parseFloat(p.DailyProtein)  || 0,
-                        carbs:    parseFloat(p.DailyCarbs)    || 0,
-                        fats:     parseFloat(p.DailyFats)     || 0,
+                        calories: isToday ? parseFloat(p.DailyCalories) || 0 : 0,
+                        protein:  isToday ? parseFloat(p.DailyProtein)  || 0 : 0,
+                        carbs:    isToday ? parseFloat(p.DailyCarbs)    || 0 : 0,
+                        fats:     isToday ? parseFloat(p.DailyFats)     || 0 : 0,
                     });
                 }
             } catch (e) {
