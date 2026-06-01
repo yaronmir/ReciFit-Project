@@ -4,6 +4,8 @@ import EditProfile from './EditProfile';
 import BMICalculator from './BMICalculator';
 import BMRCalculator from './BMRCalculator';
 import FoodLog from './FoodLog';
+import RecipeChat from './RecipeChat';
+import Cookbook from './Cookbook';
 import { API_URL } from './config';
 
 // ─── BMR & Goal Calculation ────────────────────────────────────────────────
@@ -146,6 +148,21 @@ const Dashboard = ({ user, signOut }) => {
         return <FoodLog user={user} onBack={() => setCurrentView('dashboard')} onFoodLogged={handleFoodLogged} />;
     }
 
+    const remainingMacros = {
+        calories: Math.max(0, goals.calories - eaten.calories),
+        protein: Math.max(0, goals.protein - eaten.protein),
+        carbs: Math.max(0, goals.carbs - eaten.carbs),
+        fats: Math.max(0, goals.fats - eaten.fats)
+    };
+
+    if (currentView === 'recipeChat') {
+        return <RecipeChat user={user} remainingMacros={remainingMacros} onBack={() => setCurrentView('dashboard')} />;
+    }
+
+    if (currentView === 'cookbook') {
+        return <Cookbook user={user} onBack={() => setCurrentView('dashboard')} />;
+    }
+
     // ── Ring progress percentage ───────────────────────────────────────────
     const ringPercent = goals.calories > 0 ? Math.min((eaten.calories / goals.calories) * 100, 100) : 0;
     const ringDash = 2 * Math.PI * 54; // circumference for r=54
@@ -174,8 +191,11 @@ const Dashboard = ({ user, signOut }) => {
                     <button className="menu-item" onClick={() => { setCurrentView('foodLog'); setIsMenuOpen(false); }}>
                         <span>🍎</span> Log Food (AI)
                     </button>
-                    <button className="menu-item" onClick={() => alert('New Recipe coming soon!')}>
-                        <span>🍽️</span> New Recipe
+                    <button className="menu-item" onClick={() => { setCurrentView('recipeChat'); setIsMenuOpen(false); }}>
+                        <span>👩‍🍳</span> Chef Chat
+                    </button>
+                    <button className="menu-item" onClick={() => { setCurrentView('cookbook'); setIsMenuOpen(false); }}>
+                        <span>📖</span> My Cookbook
                     </button>
                 </div>
 

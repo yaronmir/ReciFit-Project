@@ -8,6 +8,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.db_manager import DbManager
 from core.lambda_manager import LambdaManager
 from api.food_endpoints import log_food
+from api.food_endpoints import log_food
+from api.recipe_endpoints import chat_recipe, save_recipe, get_cookbook, save_chat_history_endpoint, get_chat_histories_endpoint, delete_chat_history_endpoint
 
 # Initialize DbManager outside the handler so AWS Lambda can reuse the connection
 db = DbManager()
@@ -22,6 +24,30 @@ def lambda_handler(event, context):
     # Route: /log-food  (POST)
     if path.endswith('/log-food') and method == 'POST':
         return log_food(event, context)
+
+    # Route: /chat (POST)
+    if path.endswith('/chat') and method == 'POST':
+        return chat_recipe(event, context)
+
+    # Route: /chat/history (POST)
+    if path.endswith('/chat/history') and method == 'POST':
+        return save_chat_history_endpoint(event, context)
+
+    # Route: /chat/history/delete (POST/DELETE)
+    if path.endswith('/chat/history/delete'):
+        return delete_chat_history_endpoint(event, context)
+
+    # Route: /chat/history (GET)
+    if path.endswith('/chat/history') and method == 'GET':
+        return get_chat_histories_endpoint(event, context)
+
+    # Route: /recipes/save (POST)
+    if path.endswith('/recipes/save') and method == 'POST':
+        return save_recipe(event, context)
+
+    # Route: /recipes (GET)
+    if path.endswith('/recipes') and method == 'GET':
+        return get_cookbook(event, context)
 
     # Route: /profile  (GET or POST)
     if method == 'GET':
