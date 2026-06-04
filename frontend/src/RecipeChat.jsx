@@ -71,7 +71,7 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
             
             if (res.ok) {
                 // Remove from sidebar list
-                setPastHistories(prev => prev.filter(h => h.ChatId !== idToDelete));
+                setSavedChats(prev => prev.filter(h => h.ChatId !== idToDelete));
                 // If it's the currently open chat, clear the screen
                 if (chatId === idToDelete) {
                     handleNewChat();
@@ -225,11 +225,15 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                                 
                                 {msg.recipe && (
                                     <div className="recipe-card">
-                                        {msg.recipe.image_url && (
+                                        {msg.recipe.image_url ? (
                                             <div style={{width: '100%', height: '200px', marginBottom: '15px', borderRadius: '10px', overflow: 'hidden'}}>
                                                 <img src={msg.recipe.image_url} alt="Recipe" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
                                             </div>
-                                        )}
+                                        ) : msg.recipe.image_error ? (
+                                            <div style={{width: '100%', padding: '10px', marginBottom: '15px', backgroundColor: 'rgba(255,0,0,0.1)', color: '#ff6b6b', borderRadius: '10px', fontSize: '0.9em'}}>
+                                                <strong>Image Error:</strong> {msg.recipe.image_error}
+                                            </div>
+                                        ) : null}
                                         <h3>{msg.recipe.title}</h3>
                                         <p className="recipe-desc">{msg.recipe.description}</p>
                                         

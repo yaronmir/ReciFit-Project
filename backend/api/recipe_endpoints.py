@@ -58,7 +58,8 @@ def call_openai_recipe(api_key, user_message, remaining_macros, chat_history=[])
     system_prompt = f"""You are a professional chef and nutritionist. 
 The user has the following daily macros REMAINING: 
 Calories: {remaining_macros.get('calories', 0)}, Protein: {remaining_macros.get('protein', 0)}g, Carbs: {remaining_macros.get('carbs', 0)}g, Fats: {remaining_macros.get('fats', 0)}g.
-Generate a recipe that strictly fits within these remaining macros based on their request.
+Generate a recipe that is suitable for their request and DOES NOT exceed these remaining macros. 
+CRITICAL: You must calculate the TRUE and accurate nutritional value of the recipe based on the exact ingredients you provide. Do NOT just copy the user's remaining macros.
 Always use the generate_recipe function."""
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -105,13 +106,14 @@ Always use the generate_recipe function."""
 
 def call_openai_image(api_key, prompt):
     """
-    Calls DALL-E 2 to generate a photorealistic image of the recipe.
+    Calls the college proxy model to generate a photorealistic image of the recipe.
     """
     payload = {
-        "model": "dall-e-2",
+        "model": "gpt-image-1-mini",
         "prompt": f"A professional, mouth-watering food photography shot of: {prompt}. High quality.",
         "n": 1,
-        "size": "512x512"
+        "size": "1024x1024",
+        "quality": "low"
     }
 
     data = json.dumps(payload).encode("utf-8")
@@ -125,10 +127,21 @@ def call_openai_image(api_key, prompt):
         method="POST"
     )
 
-    with urllib.request.urlopen(req, timeout=60) as response:
-        result = json.loads(response.read().decode("utf-8"))
-
-    return result["data"][0]["url"]
+    try:
+        with urllib.request.urlopen(req, timeout=60) as response:
+            result = json.loads(response.read().decode("utf-8"))
+        
+        data_item = result["data"][0]
+        if "b64_json" in data_item and data_item["b64_json"]:
+            return "data:image/png;base64," + data_item["b64_json"]
+        elif "url" in data_item:
+            return data_item["url"]
+        else:
+            raise Exception("No image URL or Base64 returned from API.")
+            
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        raise Exception(f"HTTP {e.code}: {error_body}")
 
 def chat_recipe(event, context):
     try:
@@ -156,6 +169,7 @@ def chat_recipe(event, context):
             except Exception as e:
                 print(f"Failed to generate image during chat: {e}")
                 recipe_data['image_url'] = None
+                recipe_data['image_error'] = str(e)
         else:
             recipe_data['image_url'] = None
 
@@ -186,12 +200,17 @@ def save_recipe(event, context):
 
         recipe_id = str(uuid.uuid4())
         
-        # 1. Upload Image to S3 (if we have a URL)
+        # 1. Upload Image to S3        # Save Image to S3
         s3_image_key = None
         if image_url:
             s3_image_key = f"recipes/{user_id}/{recipe_id}.png"
             try:
-                s3.upload_image_from_url(image_url, s3_image_key)
+                if image_url.startswith("data:image"):
+                    # Extract the base64 part
+                    base64_data = image_url.split(",")[1]
+                    s3.upload_image_from_base64(base64_data, s3_image_key)
+                else:
+                    s3.upload_image_from_url(image_url, s3_image_key)
             except Exception as e:
                 print(f"Error uploading image to S3: {e}")
                 s3_image_key = None

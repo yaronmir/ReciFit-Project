@@ -38,6 +38,24 @@ class S3Manager:
             print(f"Failed to upload image to S3: {e}")
             raise Exception(f"S3 upload failed: {e}")
             
+    def upload_image_from_base64(self, base64_string, object_name):
+        """
+        Decodes a base64 string into bytes and uploads it directly to S3.
+        """
+        import base64
+        try:
+            image_data = base64.b64decode(base64_string)
+            self.s3_client.put_object(
+                Bucket=self.bucket_name,
+                Key=object_name,
+                Body=image_data,
+                ContentType='image/png'
+            )
+            return True
+        except Exception as e:
+            print(f"Failed to upload base64 image to S3: {e}")
+            raise Exception(f"S3 base64 upload failed: {e}")
+
     def get_presigned_url(self, object_name, expiration=3600):
         """
         Generates a secure presigned URL to view the image.

@@ -21,6 +21,10 @@ def lambda_handler(event, context):
     method = event.get('requestContext', {}).get('http', {}).get('method', 'GET')
     path = event.get('rawPath', '')
 
+    # Catch-all for CORS preflight requests
+    if method == 'OPTIONS':
+        return LambdaManager.success_response({})
+
     # Route: /log-food  (POST)
     if path.endswith('/log-food') and method == 'POST':
         return log_food(event, context)
