@@ -264,7 +264,7 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                                             onClick={() => !msg.saved && handleSaveRecipe(msg.recipe, idx)}
                                             disabled={isSaving || msg.saved}
                                         >
-                                            {msg.saved ? '✓ Saved to Cookbook' : (isSaving ? 'Saving to Cookbook...' : '💾 Save to Cookbook')}
+                                            {msg.saved ? '✓ Saved to Cookbook' : (isSaving ? 'Generating Image & Saving...' : '💾 Save to Cookbook')}
                                         </button>
                                     </div>
                                 )}

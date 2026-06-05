@@ -163,13 +163,9 @@ def chat_recipe(event, context):
         recipe_data = call_openai_recipe(api_key, user_message, remaining_macros, chat_history)
         
         if recipe_data.get('is_recipe'):
-            try:
-                image_url = call_openai_image(api_key, recipe_data.get('title', 'A delicious meal'))
-                recipe_data['image_url'] = image_url
-            except Exception as e:
-                print(f"Failed to generate image during chat: {e}")
-                recipe_data['image_url'] = None
-                recipe_data['image_error'] = str(e)
+            # DEFERRED IMAGE GENERATION: We no longer generate images during the chat!
+            # We only generate the image when the user clicks 'Save to Cookbook' to save API costs.
+            recipe_data['image_url'] = None
         else:
             recipe_data['image_url'] = None
 
@@ -200,20 +196,27 @@ def save_recipe(event, context):
 
         recipe_id = str(uuid.uuid4())
         
-        # 1. Upload Image to S3        # Save Image to S3
-        s3_image_key = None
-        if image_url:
-            s3_image_key = f"recipes/{user_id}/{recipe_id}.png"
-            try:
-                if image_url.startswith("data:image"):
-                    # Extract the base64 part
-                    base64_data = image_url.split(",")[1]
-                    s3.upload_image_from_base64(base64_data, s3_image_key)
-                else:
-                    s3.upload_image_from_url(image_url, s3_image_key)
-            except Exception as e:
-                print(f"Error uploading image to S3: {e}")
-                s3_image_key = None
+        # 1. Deferred Image Generation & Upload to S3
+        s3_image_key = f"recipes/{user_id}/{recipe_id}.png"
+        presigned_image_url = None
+        
+        try:
+            recipe_title = recipe_data.get('title', 'A delicious meal')
+            print(f"Generating image for saved recipe: {recipe_title}")
+            
+            # Generate the image ONLY when saving!
+            generated_image_url = call_openai_image(api_key, recipe_title)
+            
+            if generated_image_url and generated_image_url.startswith("data:image"):
+                # Extract the base64 part
+                base64_data = generated_image_url.split(",")[1]
+                s3.upload_image_from_base64(base64_data, s3_image_key)
+            else:
+                s3.upload_image_from_url(generated_image_url, s3_image_key)
+                
+        except Exception as e:
+            print(f"Error generating or uploading image to S3: {e}")
+            s3_image_key = None
 
         # 2. Upload Recipe JSON to S3 (per user request)
         s3_json_key = f"recipes/{user_id}/{recipe_id}.json"
@@ -285,6 +288,11 @@ def save_chat_history_endpoint(event, context):
         if not chat_id:
             chat_id = str(uuid.uuid4())
             
+        # Prevent DynamoDB 400KB limit crash by stripping massive Base64 images from the chat history log
+        for msg in messages:
+            if msg.get('recipe') and 'image_url' in msg['recipe']:
+                msg['recipe']['image_url'] = None
+                
         # Convert float to decimal for dynamodb if any macros exist
         messages_dec = json.loads(json.dumps(messages), parse_float=Decimal)
 
