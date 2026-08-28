@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import EditProfile from './EditProfile';
-import BMICalculator from './BMICalculator';
-import BMRCalculator from './BMRCalculator';
 import FoodLog from './FoodLog';
 import RecipeChat from './RecipeChat';
 import Cookbook from './Cookbook';
@@ -12,43 +10,53 @@ import { API_URL } from './config';
 function calculateGoals(profile) {
     const weight = parseFloat(profile.weight);
     const height = parseFloat(profile.height);
-    const age    = parseFloat(profile.age);
+    const age = parseFloat(profile.age);
     const gender = profile.gender;
-    const goal   = profile.fitnessGoal;
+    const goal = profile.fitnessGoal;
 
-    // If any required field is missing, return zeros
-    if (!weight || !height || !age || !gender) {
+    // If any required field is missing and there is no custom goal, return zeros
+    if (!profile.customCalorieGoal && (!weight || !height || !age || !gender)) {
         return { calories: 0, protein: 0, carbs: 0, fats: 0 };
     }
 
-    // Mifflin-St Jeor BMR formula
-    let bmr = 10 * weight + 6.25 * height - 5 * age;
-    bmr += (gender === 'Male') ? 5 : -161;
+    let calorieGoal = 0;
 
-    // Apply goal modifier
-    let calorieGoal = bmr;
-    if (goal === 'Lose Weight')   calorieGoal = bmr * 0.80;
-    if (goal === 'Build Muscle')  calorieGoal = bmr * 1.20;
+    if (profile.customCalorieGoal) {
+        calorieGoal = parseInt(profile.customCalorieGoal, 10);
+    } else {
+        // Mifflin-St Jeor BMR formula
+        let bmr = 10 * weight + 6.25 * height - 5 * age;
+        bmr += (gender === 'Male') ? 5 : -161;
 
-    calorieGoal = Math.round(calorieGoal);
+        // Apply goal modifier
+        calorieGoal = bmr;
+        if (goal === 'Lose Weight') calorieGoal = bmr * 0.80;
+        if (goal === 'Build Muscle') calorieGoal = bmr * 1.20;
+
+        calorieGoal = Math.round(calorieGoal);
+    }
 
     // Macro split: 30% protein, 45% carbs, 25% fats
     return {
         calories: calorieGoal,
-        protein:  Math.round((calorieGoal * 0.30) / 4),
-        carbs:    Math.round((calorieGoal * 0.45) / 4),
-        fats:     Math.round((calorieGoal * 0.25) / 9),
+        protein: Math.round((calorieGoal * 0.30) / 4),
+        carbs: Math.round((calorieGoal * 0.45) / 4),
+        fats: Math.round((calorieGoal * 0.25) / 9),
     };
 }
 // ──────────────────────────────────────────────────────────────────────────
 
 const Dashboard = ({ user, signOut }) => {
-    const [isMenuOpen, setIsMenuOpen]     = useState(false);
-    const [currentView, setCurrentView]   = useState('dashboard');
-    const [profile, setProfile]           = useState(null);
-    const [goals, setGoals]               = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
-    const [eaten, setEaten]               = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
-    const [isDarkMode, setIsDarkMode]     = useState(() => localStorage.getItem('recifit-dark') === 'true');
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [currentView, setCurrentView] = useState('dashboard');
+    const [profile, setProfile] = useState(null);
+    const [goals, setGoals] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
+    const [eaten, setEaten] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
+    const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('recifit-dark') === 'true');
+    const [showBmiModal, setShowBmiModal] = useState(false);
+    const [showBmrModal, setShowBmrModal] = useState(false);
+    const [isEditingGoal, setIsEditingGoal] = useState(false);
+    const [customGoalInput, setCustomGoalInput] = useState('');
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
     const toggleDark = () => {
@@ -56,6 +64,32 @@ const Dashboard = ({ user, signOut }) => {
             localStorage.setItem('recifit-dark', !prev);
             return !prev;
         });
+    };
+
+    const handleSaveCustomGoal = async () => {
+        const newGoal = customGoalInput.toString().trim() === '' ? '' : parseInt(customGoalInput, 10);
+        if (newGoal !== '' && (isNaN(newGoal) || newGoal <= 0)) return;
+
+        try {
+            const userId = user?.userId || user?.username || user?.signInDetails?.loginId || user?.attributes?.sub;
+            if (!userId) return;
+
+            const updates = { customCalorieGoal: newGoal };
+            const response = await fetch(`${API_URL}/profile`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, updates })
+            });
+
+            if (response.ok) {
+                const updatedProfile = { ...profile, ...updates };
+                setProfile(updatedProfile);
+                setGoals(calculateGoals(updatedProfile));
+                setIsEditingGoal(false);
+            }
+        } catch (error) {
+            console.error('Failed to update custom goal:', error);
+        }
     };
 
     // ── Fetch profile on mount ─────────────────────────────────────────────
@@ -78,10 +112,10 @@ const Dashboard = ({ user, signOut }) => {
 
                     // Only restore progress if it was logged today — otherwise reset to 0
                     setEaten({
-                        calories: isToday ? parseFloat(p.DailyCalories) || 0 : 0,
-                        protein:  isToday ? parseFloat(p.DailyProtein)  || 0 : 0,
-                        carbs:    isToday ? parseFloat(p.DailyCarbs)    || 0 : 0,
-                        fats:     isToday ? parseFloat(p.DailyFats)     || 0 : 0,
+                        calories: isToday ? Math.round(parseFloat(p.DailyCalories) || 0) : 0,
+                        protein: isToday ? Math.round(parseFloat(p.DailyProtein) || 0) : 0,
+                        carbs: isToday ? Math.round(parseFloat(p.DailyCarbs) || 0) : 0,
+                        fats: isToday ? Math.round(parseFloat(p.DailyFats) || 0) : 0,
                     });
                 }
             } catch (e) {
@@ -95,16 +129,16 @@ const Dashboard = ({ user, signOut }) => {
     const handleFoodLogged = (totals) => {
         setEaten(prev => ({
             calories: Math.round(prev.calories + totals.calories),
-            protein:  Math.round(prev.protein  + totals.protein),
-            carbs:    Math.round(prev.carbs    + totals.carbs),
-            fats:     Math.round(prev.fats     + totals.fats),
+            protein: Math.round(prev.protein + totals.protein),
+            carbs: Math.round(prev.carbs + totals.carbs),
+            fats: Math.round(prev.fats + totals.fats),
         }));
     };
 
     const macros = [
-        { name: 'Protein', icon: '🥩', eaten: eaten.protein, goal: goals.protein, unit: 'g' },
-        { name: 'Carbs',   icon: '🌾', eaten: eaten.carbs,   goal: goals.carbs,   unit: 'g' },
-        { name: 'Fats',    icon: '🥑', eaten: eaten.fats,    goal: goals.fats,    unit: 'g', cardClass: 'fats-card' }
+        { name: 'Protein', icon: '🥩', eaten: Math.round(eaten.protein), goal: goals.protein, unit: 'g' },
+        { name: 'Carbs', icon: '🌾', eaten: Math.round(eaten.carbs), goal: goals.carbs, unit: 'g' },
+        { name: 'Fats', icon: '🥑', eaten: Math.round(eaten.fats), goal: goals.fats, unit: 'g', cardClass: 'fats-card' }
     ];
 
     // ── Navigation views ───────────────────────────────────────────────────
@@ -141,8 +175,6 @@ const Dashboard = ({ user, signOut }) => {
         );
     }
 
-    if (currentView === 'BMICalculator') return <BMICalculator onBack={() => setCurrentView('dashboard')} />;
-    if (currentView === 'BMRCalculator') return <BMRCalculator onBack={() => setCurrentView('dashboard')} />;
     if (currentView === 'foodLog') {
         return <FoodLog user={user} onBack={() => setCurrentView('dashboard')} onFoodLogged={handleFoodLogged} />;
     }
@@ -167,8 +199,133 @@ const Dashboard = ({ user, signOut }) => {
     const ringDash = 2 * Math.PI * 54; // circumference for r=54
     const ringOffset = ringDash - (ringPercent / 100) * ringDash;
 
+    const renderBmiModal = () => {
+        if (!showBmiModal) return null;
+
+        const weight = parseFloat(profile?.weight);
+        const height = parseFloat(profile?.height);
+
+        const hasData = weight && height;
+        let bmi = 0;
+        let category = '';
+
+        if (hasData) {
+            const heightInMeters = height / 100;
+            bmi = (weight / (heightInMeters * heightInMeters)).toFixed(1);
+            if (bmi < 18.5) category = 'Underweight';
+            else if (bmi < 25) category = 'Healthy Weight';
+            else if (bmi < 30) category = 'Overweight';
+            else category = 'Obese';
+        }
+
+        return (
+            <div className="dashboard-modal-overlay" onClick={() => setShowBmiModal(false)}>
+                <div className="dashboard-modal-content" onClick={e => e.stopPropagation()}>
+                    <button className="dashboard-modal-close" onClick={() => setShowBmiModal(false)}>×</button>
+                    <h2 className="dashboard-modal-title">Your BMI</h2>
+
+                    {hasData ? (
+                        <>
+                            <div className="dashboard-modal-result">
+                                <p className="dashboard-modal-desc">Body Mass Index</p>
+                                <div className="dashboard-modal-value">{bmi}</div>
+                                <p className="dashboard-modal-desc">Category: <strong>{category}</strong></p>
+                            </div>
+                            <button className="dashboard-modal-action" onClick={() => setShowBmiModal(false)}>Awesome!</button>
+                        </>
+                    ) : (
+                        <>
+                            <div className="dashboard-modal-result">
+                                <p className="dashboard-modal-desc">We don't have enough data to calculate your BMI.</p>
+                            </div>
+                            <button className="dashboard-modal-action" onClick={() => { setShowBmiModal(false); setCurrentView('editProfile'); }}>
+                                Edit Profile
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const renderBmrModal = () => {
+        if (!showBmrModal) return null;
+
+        const weight = parseFloat(profile?.weight);
+        const height = parseFloat(profile?.height);
+        const age = parseFloat(profile?.age);
+        const gender = profile?.gender;
+
+        const hasData = weight && height && age && gender;
+        let bmr = 0;
+
+        if (hasData) {
+            bmr = 10 * weight + 6.25 * height - 5 * age;
+            bmr += (gender === 'Male') ? 5 : -161;
+            bmr = Math.round(bmr);
+        }
+
+        return (
+            <div className="dashboard-modal-overlay" onClick={() => setShowBmrModal(false)}>
+                <div className="dashboard-modal-content" onClick={e => e.stopPropagation()}>
+                    <button className="dashboard-modal-close" onClick={() => setShowBmrModal(false)}>×</button>
+                    <h2 className="dashboard-modal-title">Your BMR</h2>
+
+                    {hasData ? (
+                        <>
+                            <div className="dashboard-modal-result">
+                                <p className="dashboard-modal-desc">Basal Metabolic Rate</p>
+                                <div className="dashboard-modal-value">{bmr} <span style={{ fontSize: '20px' }}>kcal</span></div>
+                                <p className="dashboard-modal-desc">Daily resting calories</p>
+                            </div>
+                            <button className="dashboard-modal-action" onClick={() => setShowBmrModal(false)}>Got it!</button>
+                        </>
+                    ) : (
+                        <>
+                            <div className="dashboard-modal-result">
+                                <p className="dashboard-modal-desc">We don't have enough data to calculate your BMR.</p>
+                            </div>
+                            <button className="dashboard-modal-action" onClick={() => { setShowBmrModal(false); setCurrentView('editProfile'); }}>
+                                Edit Profile
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const renderGoalModal = () => {
+        if (!isEditingGoal) return null;
+
+        return (
+            <div className="dashboard-modal-overlay" onClick={() => setIsEditingGoal(false)}>
+                <div className="dashboard-modal-content" onClick={e => e.stopPropagation()}>
+                    <button className="dashboard-modal-close" onClick={() => setIsEditingGoal(false)}>×</button>
+                    <h2 className="dashboard-modal-title">Custom Calorie Goal</h2>
+                    <div className="dashboard-modal-result">
+                        <p className="dashboard-modal-desc" style={{ marginBottom: '15px' }}>Enter your target daily calories:</p>
+                        <input
+                            type="number"
+                            value={customGoalInput}
+                            onChange={(e) => setCustomGoalInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveCustomGoal(); }}
+                            autoFocus
+                            style={{ fontSize: '32px', padding: '10px', width: '150px', textAlign: 'center', borderRadius: '12px', border: '2px solid #7c3aed', background: 'transparent', color: 'inherit', fontWeight: '800', marginBottom: '15px' }}
+                        />
+                        <p className="dashboard-modal-desc">Leave empty to use BMR suggestions.</p>
+                    </div>
+                    <button className="dashboard-modal-action" onClick={handleSaveCustomGoal}>Save Goal</button>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className={`dashboard-wrapper${isDarkMode ? ' dark' : ''}`}>
+            {renderBmiModal()}
+            {renderBmrModal()}
+            {renderGoalModal()}
             {/* Sidebar & Overlay */}
             <div className={`menu-overlay ${isMenuOpen ? 'open' : ''}`} onClick={toggleMenu}></div>
             <div className={`sidebar ${isMenuOpen ? 'open' : ''}`}>
@@ -181,10 +338,10 @@ const Dashboard = ({ user, signOut }) => {
                     <button className="menu-item" onClick={() => { setCurrentView('editProfile'); setIsMenuOpen(false); }}>
                         <span>✏️</span> Edit Profile
                     </button>
-                    <button className="menu-item" onClick={() => { setCurrentView('BMICalculator'); setIsMenuOpen(false); }}>
+                    <button className="menu-item" onClick={() => { setShowBmiModal(true); setIsMenuOpen(false); }}>
                         <span>⚖️</span> Calculate BMI
                     </button>
-                    <button className="menu-item" onClick={() => { setCurrentView('BMRCalculator'); setIsMenuOpen(false); }}>
+                    <button className="menu-item" onClick={() => { setShowBmrModal(true); setIsMenuOpen(false); }}>
                         <span>🔥</span> Calculate BMR
                     </button>
                     <button className="menu-item" onClick={() => { setCurrentView('foodLog'); setIsMenuOpen(false); }}>
@@ -207,7 +364,7 @@ const Dashboard = ({ user, signOut }) => {
             <div className="dashboard-main">
                 <div className="dashboard-header">
                     <button className="icon-button" onClick={toggleMenu}>☰</button>
-                    <h2 className="dashboard-title">RECIFIT HUB</h2>
+                    <h2 className="dashboard-title">RECIFIT</h2>
                     <button className="dark-mode-btn" onClick={toggleDark} title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
                         {isDarkMode ? '☀️' : '🌙'}
                     </button>
@@ -220,7 +377,7 @@ const Dashboard = ({ user, signOut }) => {
                         <div className="progress-ring-container">
                             {/* Animated SVG ring */}
                             <svg className="progress-svg" viewBox="0 0 120 120">
-                                <circle cx="60" cy="60" r="54" fill="none" stroke="#e9d8fd" strokeWidth="10"/>
+                                <circle cx="60" cy="60" r="54" fill="none" stroke="#e9d8fd" strokeWidth="10" />
                                 <circle
                                     cx="60" cy="60" r="54" fill="none"
                                     stroke="url(#ringGrad)" strokeWidth="10"
@@ -232,18 +389,18 @@ const Dashboard = ({ user, signOut }) => {
                                 />
                                 <defs>
                                     <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" stopColor="#7c3aed"/>
-                                        <stop offset="100%" stopColor="#a78bfa"/>
+                                        <stop offset="0%" stopColor="#7c3aed" />
+                                        <stop offset="100%" stopColor="#a78bfa" />
                                     </linearGradient>
                                 </defs>
                             </svg>
                             <div className="progress-ring-inner">
-                                <span className="calories-number">{eaten.calories}</span>
+                                <span className="calories-number">{Math.round(eaten.calories)}</span>
                                 <span className="calories-label">kcal</span>
                             </div>
                         </div>
-                        <div className="goal-badge">
-                            <span>🎏</span> Goal: {goals.calories} kcal
+                        <div className="goal-badge" onClick={() => { setIsEditingGoal(true); setCustomGoalInput(profile?.customCalorieGoal?.toString() || ''); }} style={{ cursor: 'pointer', transition: 'transform 0.2s' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+                            <span>🎏</span> Goal: {goals.calories} kcal <span style={{ fontSize: '12px', opacity: 0.6 }}>✏️</span>
                         </div>
                     </div>
 
