@@ -77,11 +77,11 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                     handleNewChat();
                 }
             } else {
-                alert('Failed to delete chat.');
+                console.error('Failed to delete chat.');
             }
         } catch (e) {
             console.error('Delete chat error:', e);
-            alert('Failed to connect to server.');
+            console.error('Failed to connect to server.');
         }
     };
 
@@ -148,17 +148,16 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
 
             const data = await response.json();
             if (response.ok) {
-                alert('Recipe and image saved to your Cookbook!');
                 // Mark this specific recipe as saved in the history so they don't click it again
                 const newHistory = [...history];
                 newHistory[msgIndex].saved = true;
                 setHistory(newHistory);
                 saveChatToDB(newHistory, chatId);
             } else {
-                alert(`Error saving recipe: ${data.error}`);
+                console.error(`Error saving recipe: ${data.error}`);
             }
         } catch (err) {
-            alert('Connection error while saving recipe.');
+            console.error('Connection error while saving recipe.');
         } finally {
             setIsSaving(false);
         }

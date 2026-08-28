@@ -9,7 +9,7 @@ from core.db_manager import DbManager
 from core.lambda_manager import LambdaManager
 from api.food_endpoints import log_food
 from api.food_endpoints import log_food
-from api.recipe_endpoints import chat_recipe, save_recipe, get_cookbook, save_chat_history_endpoint, get_chat_histories_endpoint, delete_chat_history_endpoint
+from api.recipe_endpoints import chat_recipe, save_recipe, get_cookbook, save_chat_history_endpoint, get_chat_histories_endpoint, delete_chat_history_endpoint, delete_recipe_endpoint
 
 # Initialize DbManager outside the handler so AWS Lambda can reuse the connection
 db = DbManager()
@@ -48,6 +48,10 @@ def lambda_handler(event, context):
     # Route: /recipes/save (POST)
     if path.endswith('/recipes/save') and method == 'POST':
         return save_recipe(event, context)
+        
+    # Route: /recipes/delete (POST/DELETE)
+    if path.endswith('/recipes/delete'):
+        return delete_recipe_endpoint(event, context)
 
     # Route: /recipes (GET)
     if path.endswith('/recipes') and method == 'GET':

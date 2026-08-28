@@ -90,6 +90,28 @@ class DbManager:
             print(f"Error fetching recipes for user {user_id}: {error_message}")
             raise Exception(f"Database read error: {error_message}")
 
+    def delete_recipe(self, user_id, recipe_id):
+        """
+        Deletes a specific recipe from the user's SavedRecipes list.
+        """
+        try:
+            recipes = self.get_saved_recipes(user_id)
+            new_recipes = [r for r in recipes if r.get('RecipeId') != recipe_id]
+            
+            if len(recipes) == len(new_recipes):
+                return False # Nothing was deleted
+                
+            self.table.update_item(
+                Key={'UserId': user_id},
+                UpdateExpression="SET SavedRecipes = :recipes",
+                ExpressionAttributeValues={':recipes': new_recipes}
+            )
+            return True
+        except ClientError as e:
+            error_message = e.response['Error']['Message']
+            print(f"Error deleting recipe {recipe_id} for user {user_id}: {error_message}")
+            raise Exception(f"Database write error: {error_message}")
+
     def save_chat_history(self, user_id, chat_id, title, messages):
         """
         Saves or updates a chat conversation in the user's ChatHistories list.

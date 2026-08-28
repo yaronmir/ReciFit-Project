@@ -44,6 +44,29 @@ const Cookbook = ({ user, onBack }) => {
         setSelectedRecipe(null);
     };
 
+    const handleDeleteRecipe = async (recipeId) => {
+        if (!window.confirm("Are you sure you want to delete this recipe?")) return;
+
+        const userId = user?.userId || user?.username || user?.signInDetails?.loginId || user?.attributes?.sub;
+        
+        try {
+            const response = await fetch(`${API_URL}/recipes/delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, recipeId })
+            });
+
+            if (response.ok) {
+                setRecipes(prev => prev.filter(r => r.RecipeId !== recipeId));
+                closeModal();
+            } else {
+                console.error("Failed to delete recipe.");
+            }
+        } catch (err) {
+            console.error("Connection error while deleting recipe.");
+        }
+    };
+
     return (
         <div className="cookbook-wrapper">
             <div className="cookbook-container">
@@ -106,7 +129,12 @@ const Cookbook = ({ user, onBack }) => {
                         </div>
 
                         <div className="modal-content">
-                            <h2>{selectedRecipe.Title}</h2>
+                            <div className="modal-title-row">
+                                <h2>{selectedRecipe.Title}</h2>
+                                <button className="delete-recipe-btn" onClick={() => handleDeleteRecipe(selectedRecipe.RecipeId)}>
+                                    🗑️ Delete
+                                </button>
+                            </div>
                             <p className="modal-desc">{selectedRecipe.Description}</p>
                             
                             <div className="modal-macros">

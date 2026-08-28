@@ -116,7 +116,7 @@ const Dashboard = ({ user, signOut }) => {
                 onSave={async (updatedData) => {
                     try {
                         const userId = user?.userId || user?.username || user?.signInDetails?.loginId || user?.attributes?.sub;
-                        if (!userId) { alert('Security Error: Could not verify your User ID.'); return; }
+                        if (!userId) { console.error('Security Error: Could not verify your User ID.'); return; }
 
                         const response = await fetch(`${API_URL}/profile`, {
                             method: 'POST',
@@ -128,14 +128,13 @@ const Dashboard = ({ user, signOut }) => {
                             // Recalculate goals immediately with the new profile data
                             setProfile(updatedData);
                             setGoals(calculateGoals(updatedData));
-                            alert('Profile successfully updated!');
                             setCurrentView('dashboard');
                         } else {
                             const data = await response.json();
-                            alert('Error saving profile: ' + data.error);
+                            console.error('Error saving profile: ' + data.error);
                         }
                     } catch (error) {
-                        alert('Failed to connect to the server. Error: ' + error.message);
+                        console.error('Failed to connect to the server. Error: ' + error.message);
                     }
                 }}
             />

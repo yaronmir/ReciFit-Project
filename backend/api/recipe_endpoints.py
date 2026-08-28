@@ -83,7 +83,8 @@ Always use the generate_recipe function."""
         data=data,
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
+            "Authorization": f"Bearer {api_key}",
+            "User-Agent": "ReciFitApp/1.0"
         },
         method="POST"
     )
@@ -122,7 +123,8 @@ def call_openai_image(api_key, prompt):
         data=data,
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
+            "Authorization": f"Bearer {api_key}",
+            "User-Agent": "ReciFitApp/1.0"
         },
         method="POST"
     )
@@ -345,3 +347,25 @@ def delete_chat_history_endpoint(event, context):
     except Exception as e:
         print(f"Failed to delete chat history: {e}")
         return LambdaManager.error_response(str(e), 500)
+
+def delete_recipe_endpoint(event, context):
+    """
+    Deletes a specific recipe from the cookbook.
+    """
+    try:
+        parsed = LambdaManager.parse_event(event)
+        user_id = parsed.get('user_id') or parsed.get('body', {}).get('userId')
+        recipe_id = parsed.get('body', {}).get('recipeId')
+        
+        if not user_id or not recipe_id:
+            return LambdaManager.error_response("userId and recipeId are required", 400)
+
+        deleted = db.delete_recipe(user_id, recipe_id)
+        if deleted:
+            return LambdaManager.success_response({"message": "Recipe deleted successfully"})
+        else:
+            return LambdaManager.error_response("Recipe not found", 404)
+
+    except Exception as e:
+        print(f"Error in delete_recipe_endpoint: {e}")
+        return LambdaManager.error_response(f"Internal Server Error: {str(e)}", 500)

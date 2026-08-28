@@ -251,6 +251,32 @@
     margin-bottom: 30px;
 }
 
+/* Delete Recipe Button */
+.modal-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.delete-recipe-btn {
+    background-color: rgba(255, 77, 77, 0.15);
+    color: #ff4d4d;
+    border: 1px solid rgba(255, 77, 77, 0.3);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.delete-recipe-btn:hover {
+    background-color: rgba(255, 77, 77, 0.3);
+    border-color: rgba(255, 77, 77, 0.6);
+}
+
 .modal-macros {
     display: flex;
     gap: 15px;

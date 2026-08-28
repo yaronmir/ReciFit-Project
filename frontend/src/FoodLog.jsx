@@ -1,16 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { API_URL } from './config';
 import './FoodLog.css';
 
 const FoodLog = ({ user, onBack, onFoodLogged }) => {
     const [foodDescription, setFoodDescription] = useState('');
+    const [imagePreview, setImagePreview] = useState(null);
+    const [imageBase64, setImageBase64] = useState(null);
+    const fileInputRef = useRef(null);
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
 
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                setError('Image is too large. Please select an image under 5MB.');
+                return;
+            }
+            setError(null);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+                const base64String = reader.result.split(',')[1];
+                setImageBase64(base64String);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const removeImage = () => {
+        setImagePreview(null);
+        setImageBase64(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     const handleLog = async () => {
-        if (!foodDescription.trim()) {
-            setError('Please describe what you ate!');
+        if (!foodDescription.trim() && !imageBase64) {
+            setError('Please describe what you ate or upload a photo!');
             return;
         }
 
@@ -28,7 +57,7 @@ const FoodLog = ({ user, onBack, onFoodLogged }) => {
             const response = await fetch(`${API_URL}/log-food`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, foodDescription })
+                body: JSON.stringify({ userId, foodDescription, imageBase64 })
             });
 
             const data = await response.json().catch(() => ({}));
@@ -36,6 +65,7 @@ const FoodLog = ({ user, onBack, onFoodLogged }) => {
             if (response.ok) {
                 setResult(data);
                 setFoodDescription('');
+                removeImage();
                 // Notify Dashboard to update live calorie/macro tracking
                 if (onFoodLogged && data.totals) {
                     onFoodLogged(data.totals);
@@ -71,6 +101,33 @@ const FoodLog = ({ user, onBack, onFoodLogged }) => {
                         rows={3}
                         disabled={isLoading}
                     />
+
+                    <div className="image-upload-container">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            ref={fileInputRef}
+                            onChange={handleImageChange}
+                            style={{ display: 'none' }}
+                        />
+                        {!imagePreview ? (
+                            <button
+                                className="photo-button"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isLoading}
+                            >
+                                📸 Take Photo / Upload
+                            </button>
+                        ) : (
+                            <div className="image-preview-wrapper">
+                                <img src={imagePreview} alt="Food preview" className="image-preview" />
+                                <button className="remove-image-button" onClick={removeImage} disabled={isLoading}>
+                                    ✕
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     <button
                         className={`log-button ${isLoading ? 'loading' : ''}`}
                         onClick={handleLog}
