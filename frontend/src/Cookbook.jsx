@@ -45,7 +45,7 @@ const Cookbook = ({ user, onBack }) => {
     };
 
     const handleDeleteRecipe = async (recipeId) => {
-        if (!window.confirm("Are you sure you want to delete this recipe?")) return;
+
 
         const userId = user?.userId || user?.username || user?.signInDetails?.loginId || user?.attributes?.sub;
         

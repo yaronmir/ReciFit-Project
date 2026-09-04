@@ -58,7 +58,8 @@ def call_openai_recipe(api_key, user_message, remaining_macros, chat_history=[])
     system_prompt = f"""You are a professional chef and nutritionist. 
 The user has the following daily macros REMAINING: 
 Calories: {remaining_macros.get('calories', 0)}, Protein: {remaining_macros.get('protein', 0)}g, Carbs: {remaining_macros.get('carbs', 0)}g, Fats: {remaining_macros.get('fats', 0)}g.
-Generate a recipe that is suitable for their request and DOES NOT exceed these remaining macros. 
+Generate a recipe that is suitable for their request. 
+CRITICAL: If the user does not have enough calories remaining or if the recipe exceeds their remaining macros, you MUST still provide a recipe, but you MUST note in your 'bot_message' that they will pass their macro goals for today.
 CRITICAL: You must calculate the TRUE and accurate nutritional value of the recipe based on the exact ingredients you provide. Do NOT just copy the user's remaining macros.
 Always use the generate_recipe function."""
 

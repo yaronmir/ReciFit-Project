@@ -59,8 +59,8 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
 
     const handleDeleteChat = async (e, idToDelete) => {
         e.stopPropagation(); // Prevent loading the chat when clicking delete
-        if (!window.confirm('Are you sure you want to delete this chat?')) return;
         
+
         try {
             const userId = user?.userId || user?.username || user?.signInDetails?.loginId || user?.attributes?.sub;
             const res = await fetch(`${API_URL}/chat/history/delete`, {
