@@ -58,7 +58,7 @@ class LambdaManager:
             'statusCode': status_code,
             'headers': {
                 'Access-Control-Allow-Origin': '*', # Adjust for production security
-                'Access-Control-Allow-Credentials': True,
+                'Access-Control-Allow-Credentials': 'true',
                 'Content-Type': 'application/json'
             },
             'body': json.dumps(data, cls=DecimalEncoder)
@@ -71,7 +71,7 @@ class LambdaManager:
             'statusCode': status_code,
             'headers': {
                 'Access-Control-Allow-Origin': '*', 
-                'Access-Control-Allow-Credentials': True,
+                'Access-Control-Allow-Credentials': 'true',
                 'Content-Type': 'application/json'
             },
             'body': json.dumps({'error': message})

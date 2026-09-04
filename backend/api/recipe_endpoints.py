@@ -14,7 +14,7 @@ from core.lambda_manager import LambdaManager
 db = DbManager()
 s3 = S3Manager()
 
-def call_openai_recipe(api_key, user_message, remaining_macros, chat_history=[]):
+def call_openai_recipe(api_key, user_message, remaining_macros, chat_history=[], image_data=None, kitchen_profile=None):
     """
     Calls OpenAI to generate a recipe fitting the user's remaining macros.
     """
@@ -47,7 +47,7 @@ def call_openai_recipe(api_key, user_message, remaining_macros, chat_history=[])
                             },
                             "required": ["calories", "protein", "carbs", "fats"]
                         },
-                        "bot_message": {"type": "string", "description": "A conversational response to the user."}
+                        "bot_message": {"type": "string", "description": "A conversational response to the user. If they uploaded a photo, mention what you saw and any missing ingredients they need."}
                     },
                     "required": ["title", "description", "ingredients", "instructions", "macros", "bot_message"]
                 }
@@ -55,21 +55,52 @@ def call_openai_recipe(api_key, user_message, remaining_macros, chat_history=[])
         }
     ]
 
+    profile_text = ""
+    if kitchen_profile:
+        staples = ", ".join(kitchen_profile.get('staples', []))
+        allergies = kitchen_profile.get('allergies', '')
+        if staples or allergies:
+            profile_text = "\nUser's Kitchen Profile:\n"
+            if staples:
+                profile_text += f"- Pantry Staples Available: {staples}\n"
+            if allergies:
+                profile_text += f"- Allergies/Dietary Restrictions: {allergies}\n"
+            profile_text += "Always consider these allergies and try to use available staples if possible."
+
     system_prompt = f"""You are a professional chef and nutritionist. 
 The user has the following daily macros REMAINING: 
 Calories: {remaining_macros.get('calories', 0)}, Protein: {remaining_macros.get('protein', 0)}g, Carbs: {remaining_macros.get('carbs', 0)}g, Fats: {remaining_macros.get('fats', 0)}g.
+{profile_text}
 Generate a recipe that is suitable for their request. 
-CRITICAL: If the user does not have enough calories remaining or if the recipe exceeds their remaining macros, you MUST still provide a recipe, but you MUST note in your 'bot_message' that they will pass their macro goals for today.
-CRITICAL: You must calculate the TRUE and accurate nutritional value of the recipe based on the exact ingredients you provide. Do NOT just copy the user's remaining macros.
-Always use the generate_recipe function."""
+CRITICAL RULES:
+1. If the user does not have enough calories remaining or if the recipe exceeds their remaining macros, you MUST still provide a recipe, but you MUST note in your 'bot_message' that they will pass their macro goals for today.
+2. You must calculate the TRUE and accurate nutritional value of the recipe based on the exact ingredients you provide. Do NOT just copy the user's remaining macros.
+3. If the user provides an image, analyze it to identify available ingredients. If the image doesn't show a complete meal, or you think they might have other items (like eggs or sauces in the fridge doors), it is perfectly fine to list what you see and ask the user what they are in the mood for or if they have any other ingredients they want to add!
+4. If the user only has basic staples (like salt or oil) or no ingredients at all, DO NOT try to make a meal exclusively out of them. Generate a full, delicious recipe (e.g., beef steak, pasta, etc.) and clearly list all the ingredients they need to buy from the store in the 'bot_message'. Always ensure they get a proper meal recommendation!
+Always use the generate_recipe function if you are providing a final recipe."""
 
     messages = [{"role": "system", "content": system_prompt}]
     
     # Append history
     for msg in chat_history[-4:]:
+        # Standardize history messages (don't resend old images to save tokens, just text)
         messages.append({"role": msg["role"], "content": msg["content"]})
         
-    messages.append({"role": "user", "content": user_message})
+    if image_data:
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user_message or "Analyze this image and make a recipe."},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": image_data
+                    }
+                }
+            ]
+        })
+    else:
+        messages.append({"role": "user", "content": user_message})
 
     payload = {
         "model": "gpt-4.1-mini",
@@ -158,12 +189,14 @@ def chat_recipe(event, context):
         user_message = body.get('message')
         remaining_macros = body.get('remaining_macros', {})
         chat_history = body.get('history', [])
+        image_data = body.get('image_data')
+        kitchen_profile = body.get('kitchen_profile', {})
 
-        if not user_message:
-            return LambdaManager.error_response("Message is required", 400)
+        if not user_message and not image_data:
+            return LambdaManager.error_response("Message or image is required", 400)
 
         # Generate recipe text
-        recipe_data = call_openai_recipe(api_key, user_message, remaining_macros, chat_history)
+        recipe_data = call_openai_recipe(api_key, user_message, remaining_macros, chat_history, image_data, kitchen_profile)
         
         if recipe_data.get('is_recipe'):
             # DEFERRED IMAGE GENERATION: We no longer generate images during the chat!
@@ -196,6 +229,18 @@ def save_recipe(event, context):
         
         if not recipe_data or not recipe_data.get('title'):
             return LambdaManager.error_response("Valid recipe data is required", 400)
+            
+        recipe_title = recipe_data.get('title', 'A delicious meal')
+        
+        # Idempotency check: Prevent duplicate saves of the same recipe
+        existing_recipes = db.get_saved_recipes(user_id)
+        for r in existing_recipes:
+            if r.get('Title') == recipe_title and r.get('Description') == recipe_data.get('description', ''):
+                return LambdaManager.success_response({
+                    "message": "Recipe already saved!",
+                    "recipe_id": r['RecipeId'],
+                    "image_url": None # Presigned URL might be expired, but we don't strictly need it for the save confirmation
+                })
 
         recipe_id = str(uuid.uuid4())
         

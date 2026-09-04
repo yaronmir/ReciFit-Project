@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { API_URL } from './config';
 import './RecipeChat.css';
+
+const PANTRY_STAPLES = [
+    "Salt", "Black Pepper", "Olive Oil", "Vegetable Oil", "Garlic", 
+    "Onion", "Butter", "Flour", "Sugar", "Soy Sauce", "Milk", "Eggs"
+];
 
 const RecipeChat = ({ user, remainingMacros, onBack }) => {
     const [message, setMessage] = useState('');
@@ -11,6 +16,15 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
+
+    // New states for Image Upload & Kitchen Profile
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [kitchenProfile, setKitchenProfile] = useState({
+        staples: [],
+        allergies: ''
+    });
+    const fileInputRef = useRef(null);
 
     const fetchHistories = async () => {
         try {
@@ -23,8 +37,17 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
         }
     };
 
+    // Load kitchen profile from local storage on mount
     useEffect(() => {
         fetchHistories();
+        const savedProfile = localStorage.getItem('kitchenProfile');
+        if (savedProfile) {
+            try {
+                setKitchenProfile(JSON.parse(savedProfile));
+            } catch (e) {
+                console.error("Failed to parse kitchen profile");
+            }
+        }
     }, [user]);
 
     const saveChatToDB = async (currentHistory, currentChatId) => {
@@ -54,13 +77,12 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
         setHistory([]);
         setChatId(null);
         setMessage('');
+        setSelectedImage(null);
         setIsSidebarOpen(false);
     };
 
     const handleDeleteChat = async (e, idToDelete) => {
-        e.stopPropagation(); // Prevent loading the chat when clicking delete
-        
-
+        e.stopPropagation();
         try {
             const userId = user?.userId || user?.username || user?.signInDetails?.loginId || user?.attributes?.sub;
             const res = await fetch(`${API_URL}/chat/history/delete`, {
@@ -70,18 +92,13 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
             });
             
             if (res.ok) {
-                // Remove from sidebar list
                 setSavedChats(prev => prev.filter(h => h.ChatId !== idToDelete));
-                // If it's the currently open chat, clear the screen
-                if (chatId === idToDelete) {
-                    handleNewChat();
-                }
+                if (chatId === idToDelete) handleNewChat();
             } else {
                 console.error('Failed to delete chat.');
             }
         } catch (e) {
             console.error('Delete chat error:', e);
-            console.error('Failed to connect to server.');
         }
     };
 
@@ -91,14 +108,36 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
         setIsSidebarOpen(false);
     };
 
-    const handleSend = async () => {
-        if (!message.trim()) return;
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setSelectedImage(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
-        const newUserMsg = { role: 'user', content: message };
+    const removeImage = () => {
+        setSelectedImage(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handleSend = async () => {
+        if (!message.trim() && !selectedImage) return;
+
+        const newUserMsg = { 
+            role: 'user', 
+            content: message || "Analyze this image.", 
+            image: selectedImage 
+        };
         const updatedHistory = [...history, newUserMsg];
         
         setHistory(updatedHistory);
         setMessage('');
+        setSelectedImage(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
         setIsLoading(true);
         setError(null);
 
@@ -108,8 +147,10 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     message: newUserMsg.content,
+                    image_data: newUserMsg.image,
                     remaining_macros: remainingMacros,
-                    history: history
+                    history: history,
+                    kitchen_profile: kitchenProfile
                 })
             });
 
@@ -126,7 +167,7 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                 saveChatToDB(finalHistory, chatId);
             } else {
                 setError(data.error || 'Failed to generate recipe.');
-                setHistory(updatedHistory); // Keep user msg
+                setHistory(updatedHistory);
                 saveChatToDB(updatedHistory, chatId);
             }
         } catch (err) {
@@ -148,7 +189,6 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
 
             const data = await response.json();
             if (response.ok) {
-                // Mark this specific recipe as saved in the history so they don't click it again
                 const newHistory = [...history];
                 newHistory[msgIndex].saved = true;
                 setHistory(newHistory);
@@ -161,6 +201,20 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const toggleStaple = (staple) => {
+        setKitchenProfile(prev => {
+            const newStaples = prev.staples.includes(staple)
+                ? prev.staples.filter(s => s !== staple)
+                : [...prev.staples, staple];
+            return { ...prev, staples: newStaples };
+        });
+    };
+
+    const saveKitchenProfile = () => {
+        localStorage.setItem('kitchenProfile', JSON.stringify(kitchenProfile));
+        setIsProfileOpen(false);
     };
 
     return (
@@ -194,6 +248,46 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                 </div>
             </div>
 
+            {/* Kitchen Profile Modal */}
+            {isProfileOpen && (
+                <div className="kitchen-profile-overlay" onClick={() => setIsProfileOpen(false)}>
+                    <div className="kitchen-profile-modal" onClick={e => e.stopPropagation()}>
+                        <h2>🍽️ Kitchen Profile</h2>
+                        <p>Tell the AI Chef about your kitchen so it can give you better recipes!</p>
+                        
+                        <div className="profile-section">
+                            <h3>Pantry Staples</h3>
+                            <p className="section-desc">Select ingredients you always have at home.</p>
+                            <div className="staples-grid">
+                                {PANTRY_STAPLES.map(staple => (
+                                    <button 
+                                        key={staple} 
+                                        className={`staple-btn ${kitchenProfile.staples.includes(staple) ? 'selected' : ''}`}
+                                        onClick={() => toggleStaple(staple)}
+                                    >
+                                        {staple}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="profile-section">
+                            <h3>Allergies & Dietary Restrictions</h3>
+                            <textarea 
+                                placeholder="E.g., Peanuts, Gluten, Dairy..."
+                                value={kitchenProfile.allergies}
+                                onChange={(e) => setKitchenProfile(prev => ({...prev, allergies: e.target.value}))}
+                            />
+                        </div>
+
+                        <div className="profile-actions">
+                            <button className="cancel-profile-btn" onClick={() => setIsProfileOpen(false)}>Cancel</button>
+                            <button className="save-profile-btn" onClick={saveKitchenProfile}>Save Profile</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="recipe-chat-container">
                 <div className="chat-header">
                     <div className="header-left-actions">
@@ -206,20 +300,30 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                             Remaining: {remainingMacros.calories} kcal | P: {remainingMacros.protein}g | C: {remainingMacros.carbs}g | F: {remainingMacros.fats}g
                         </p>
                     </div>
-                    <button className="new-chat-button" onClick={handleNewChat}>+ New Chat</button>
+                    <div className="header-right-actions">
+                        <button className="profile-btn" onClick={() => setIsProfileOpen(true)} title="Kitchen Profile">
+                            🍽️ My Kitchen
+                        </button>
+                        <button className="new-chat-button" onClick={handleNewChat}>+ New Chat</button>
+                    </div>
                 </div>
 
                 <div className="chat-window">
                     {history.length === 0 && (
                         <div className="chat-empty-state">
-                            <p>Hi! Tell me what you're craving. I'll make sure it fits your remaining macros perfectly.</p>
-                            <p className="suggestion">Try: "I want something sweet but high in protein."</p>
+                            <p>Hi! Tell me what you're craving, or take a picture of your fridge to see what we can make!</p>
+                            <p className="suggestion">Try uploading a photo of your ingredients.</p>
                         </div>
                     )}
                     
                     {history.map((msg, idx) => (
                         <div key={idx} className={`chat-bubble-container ${msg.role}`}>
                             <div className={`chat-bubble ${msg.role}`}>
+                                {msg.image && (
+                                    <div className="chat-image-preview">
+                                        <img src={msg.image} alt="User upload" />
+                                    </div>
+                                )}
                                 <p className="chat-text">{msg.content}</p>
                                 
                                 {msg.recipe && (
@@ -284,17 +388,37 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                 </div>
 
                 <div className="chat-input-area">
-                    <input 
-                        type="text" 
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                        placeholder="E.g. I want a heavy pasta dish..."
-                        disabled={isLoading || isSaving}
-                    />
-                    <button onClick={handleSend} disabled={isLoading || isSaving || !message.trim()}>
-                        Send
-                    </button>
+                    {selectedImage && (
+                        <div className="input-image-preview">
+                            <img src={selectedImage} alt="Selected" />
+                            <button className="remove-image-btn" onClick={removeImage}>✕</button>
+                        </div>
+                    )}
+                    <div className="input-row">
+                        <label className="upload-btn">
+                            📷
+                            <input 
+                                type="file" 
+                                accept="image/*" 
+                                capture="environment"
+                                ref={fileInputRef}
+                                onChange={handleImageChange}
+                                style={{ display: 'none' }}
+                                disabled={isLoading || isSaving}
+                            />
+                        </label>
+                        <input 
+                            type="text" 
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                            placeholder="E.g. I want a heavy pasta dish..."
+                            disabled={isLoading || isSaving}
+                        />
+                        <button onClick={handleSend} disabled={isLoading || isSaving || (!message.trim() && !selectedImage)}>
+                            Send
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
