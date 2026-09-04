@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_URL } from './config';
 import './Cookbook.css';
 
-const Cookbook = ({ user, onBack }) => {
+const Cookbook = ({ user, onBack, onFoodLogged }) => {
     const [recipes, setRecipes] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -64,6 +64,31 @@ const Cookbook = ({ user, onBack }) => {
             }
         } catch (err) {
             console.error("Connection error while deleting recipe.");
+        }
+    };
+
+    const handleLogMeal = async (recipe) => {
+        const userId = user?.userId || user?.username || user?.signInDetails?.loginId || user?.attributes?.sub;
+        if (!userId) return;
+        
+        try {
+            const response = await fetch(`${API_URL}/log-recipe`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, macros: recipe.Macros })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (onFoodLogged && data.totals) {
+                    onFoodLogged(data.totals);
+                }
+                closeModal();
+            } else {
+                console.error("Failed to log meal.");
+            }
+        } catch (err) {
+            console.error("Connection error while logging meal.");
         }
     };
 
@@ -131,9 +156,18 @@ const Cookbook = ({ user, onBack }) => {
                         <div className="modal-content">
                             <div className="modal-title-row">
                                 <h2>{selectedRecipe.Title}</h2>
-                                <button className="delete-recipe-btn" onClick={() => handleDeleteRecipe(selectedRecipe.RecipeId)}>
-                                    🗑️ Delete
-                                </button>
+                                <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+                                    <button 
+                                        className="log-meal-btn" 
+                                        onClick={() => handleLogMeal(selectedRecipe)}
+                                        style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}
+                                    >
+                                        🍽️ I made this!
+                                    </button>
+                                    <button className="delete-recipe-btn" onClick={() => handleDeleteRecipe(selectedRecipe.RecipeId)}>
+                                        🗑️ Delete
+                                    </button>
+                                </div>
                             </div>
                             <p className="modal-desc">{selectedRecipe.Description}</p>
                             

@@ -188,3 +188,75 @@ def log_food(event, context):
     except Exception as e:
         print(f"Error in log_food: {e}")
         return LambdaManager.error_response(f"Internal Server Error: {str(e)}", 500)
+
+def log_recipe(event, context):
+    """
+    Receives exact macro totals (from a recipe) and adds them directly to the user's daily totals.
+    """
+    try:
+        parsed = LambdaManager.parse_event(event)
+
+        user_id = parsed.get('user_id')
+        if not user_id and 'userId' in parsed['body']:
+            user_id = parsed['body']['userId']
+
+        if not user_id:
+            return LambdaManager.error_response("Missing userId parameter", 401)
+
+        macros = parsed['body'].get('macros', {})
+        if not macros:
+            return LambdaManager.error_response("No macros provided", 400)
+
+        # Ensure macro values are valid numbers
+        recipe_calories = float(macros.get('calories', 0))
+        recipe_protein = float(macros.get('protein', 0))
+        recipe_carbs = float(macros.get('carbs', 0))
+        recipe_fats = float(macros.get('fats', 0))
+
+        # Get current daily totals from DB so we can ADD to them (not replace)
+        from datetime import datetime, timezone
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+        current_user = db.get_user(user_id) or {}
+        last_log_date = current_user.get("LastLogDate", "")
+
+        # If it's a new day, start fresh from 0 (daily reset)
+        if last_log_date == today:
+            current_calories = float(current_user.get("DailyCalories", 0) or 0)
+            current_protein  = float(current_user.get("DailyProtein",  0) or 0)
+            current_carbs    = float(current_user.get("DailyCarbs",    0) or 0)
+            current_fats     = float(current_user.get("DailyFats",     0) or 0)
+        else:
+            # New day — reset to 0 before adding today's food
+            current_calories = 0
+            current_protein  = 0
+            current_carbs    = 0
+            current_fats     = 0
+
+        new_calories = current_calories + recipe_calories
+        new_protein  = current_protein  + recipe_protein
+        new_carbs    = current_carbs    + recipe_carbs
+        new_fats     = current_fats     + recipe_fats
+
+        # Save updated totals to DynamoDB (must use Decimal, not float)
+        db.update_user(user_id, {
+            "DailyCalories": Decimal(str(round(new_calories, 1))),
+            "DailyProtein":  Decimal(str(round(new_protein,  1))),
+            "DailyCarbs":    Decimal(str(round(new_carbs,    1))),
+            "DailyFats":     Decimal(str(round(new_fats,     1))),
+            "LastLogDate":   today,
+        })
+
+        return LambdaManager.success_response({
+            "message": "Meal logged successfully!",
+            "totals": {
+                "calories": round(recipe_calories, 1),
+                "protein":  round(recipe_protein, 1),
+                "carbs":    round(recipe_carbs, 1),
+                "fats":     round(recipe_fats, 1)
+            }
+        })
+
+    except Exception as e:
+        print(f"Error in log_recipe: {e}")
+        return LambdaManager.error_response(f"Internal Server Error: {str(e)}", 500)
