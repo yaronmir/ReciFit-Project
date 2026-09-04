@@ -425,6 +425,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+    flex: 1;
 }
 
 .new-chat-button {
@@ -462,24 +463,28 @@
     }
     .header-center {
         order: -1;
-        width: 100%;
+        flex: 0 0 100%;
         text-align: center;
         margin-bottom: 5px;
     }
     .header-left-actions {
-        flex-direction: row;
+        flex-direction: column;
         margin-right: 0;
         flex: 1;
         gap: 8px;
+        align-items: flex-start;
     }
     .header-right-actions {
         flex: 1;
+        flex-direction: row;
         justify-content: flex-end;
+        align-items: center;
         gap: 8px;
     }
     .profile-btn, .new-chat-button, .back-button, .history-button {
         padding: 6px 10px;
         font-size: 0.85rem;
+        width: auto;
     }
     .chat-bubble {
         max-width: 90%;

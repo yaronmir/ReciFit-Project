@@ -142,6 +142,8 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
         setError(null);
 
         try {
+            const strippedHistory = history.map(msg => ({ role: msg.role, content: msg.content }));
+
             const response = await fetch(`${API_URL}/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -149,7 +151,7 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                     message: newUserMsg.content,
                     image_data: newUserMsg.image,
                     remaining_macros: remainingMacros,
-                    history: history,
+                    history: strippedHistory,
                     kitchen_profile: kitchenProfile
                 })
             });
@@ -294,7 +296,7 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                         <button className="back-button" onClick={onBack}>← Back</button>
                         <button className="history-button" onClick={() => setIsSidebarOpen(true)}>☰ History</button>
                     </div>
-                    <div className="header-center" style={{flex: 1}}>
+                    <div className="header-center">
                         <h1 className="chat-title">👨‍🍳 Chef Bot</h1>
                         <p className="chat-subtitle">
                             Remaining: {remainingMacros.calories} kcal | P: {remainingMacros.protein}g | C: {remainingMacros.carbs}g | F: {remainingMacros.fats}g
