@@ -71,12 +71,14 @@ def call_openai_recipe(api_key, user_message, remaining_macros, chat_history=[],
 The user has the following daily macros REMAINING: 
 Calories: {remaining_macros.get('calories', 0)}, Protein: {remaining_macros.get('protein', 0)}g, Carbs: {remaining_macros.get('carbs', 0)}g, Fats: {remaining_macros.get('fats', 0)}g.
 {profile_text}
-Generate a recipe that is suitable for their request. 
+Generate a recipe that is suitable for their request if they are asking for a recipe or providing edible ingredients.
 CRITICAL RULES:
 1. If the user does not have enough calories remaining or if the recipe exceeds their remaining macros, you MUST still provide a recipe, but you MUST note in your 'bot_message' that they will pass their macro goals for today.
 2. You must calculate the TRUE and accurate nutritional value of the recipe based on the exact ingredients you provide. Do NOT just copy the user's remaining macros.
 3. If the user provides an image, analyze it to identify available ingredients. If the image doesn't show a complete meal, or you think they might have other items (like eggs or sauces in the fridge doors), it is perfectly fine to list what you see and ask the user what they are in the mood for or if they have any other ingredients they want to add!
 4. If the user only has basic staples (like salt or oil) or no ingredients at all, DO NOT try to make a meal exclusively out of them. Generate a full, delicious recipe (e.g., beef steak, pasta, etc.) and clearly list all the ingredients they need to buy from the store in the 'bot_message'. Always ensure they get a proper meal recommendation!
+5. If the user's input is NOT related to food, cooking, or edible ingredients (e.g., 'rainwater', 'hello', 'cars'), DO NOT call the generate_recipe function. Simply reply conversationally in the bot_message explaining that you only help with recipes and food.
+6. If the user provides an image but DOES NOT type any text request, DO NOT generate a recipe immediately. Instead, reply conversationally: list the ingredients you see, and ask if they have more photos to upload (like another fridge shelf) or if they want you to generate a recipe now.
 Always use the generate_recipe function if you are providing a final recipe."""
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -84,20 +86,26 @@ Always use the generate_recipe function if you are providing a final recipe."""
     # Append history
     for msg in chat_history[-4:]:
         # Standardize history messages (don't resend old images to save tokens, just text)
-        messages.append({"role": msg["role"], "content": msg["content"]})
+        content = msg.get("content", "")
+        if not content or content.strip() == "":
+            content = "[User uploaded an image]"
+        messages.append({"role": msg["role"], "content": content})
         
     if image_data:
+        content_array = []
+        if user_message:
+            content_array.append({"type": "text", "text": user_message})
+            
+        content_array.append({
+            "type": "image_url",
+            "image_url": {
+                "url": image_data
+            }
+        })
+        
         messages.append({
             "role": "user",
-            "content": [
-                {"type": "text", "text": user_message or "Analyze this image and make a recipe."},
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": image_data
-                    }
-                }
-            ]
+            "content": content_array
         })
     else:
         messages.append({"role": "user", "content": user_message})
@@ -336,19 +344,51 @@ def save_chat_history_endpoint(event, context):
         if not chat_id:
             chat_id = str(uuid.uuid4())
             
-        # Prevent DynamoDB 400KB limit crash by stripping massive Base64 images from the chat history log
+        import hashlib
+        
+        # Process messages to upload images to S3
         for msg in messages:
             if msg.get('recipe') and 'image_url' in msg['recipe']:
                 msg['recipe']['image_url'] = None
+            if 'image' in msg and msg['image']:
+                if msg['image'].startswith('http'):
+                    pass # Already an S3 presigned URL
+                else:
+                    base64_string = msg['image']
+                    if base64_string.startswith("data:image"):
+                        base64_data = base64_string.split(",")[1]
+                    else:
+                        base64_data = base64_string
+                    
+                    image_hash = hashlib.md5(base64_data.encode('utf-8')).hexdigest()
+                    s3_key = f"chat_images/{user_id}/{chat_id}/{image_hash}.png"
+                    
+                    try:
+                        s3.upload_image_from_base64(base64_data, s3_key)
+                        msg['s3_image_key'] = s3_key
+                        # Replace base64 with a presigned URL so the frontend can render it seamlessly
+                        msg['image'] = s3.get_presigned_url(s3_key)
+                    except Exception as e:
+                        print(f"Failed to upload user image to S3: {e}")
+                        msg['image'] = None
+                
+        # Create a copy for DynamoDB without the expiring 'image' presigned URL
+        messages_for_db = []
+        for msg in messages:
+            db_msg = msg.copy()
+            if 'image' in db_msg:
+                del db_msg['image']
+            messages_for_db.append(db_msg)
                 
         # Convert float to decimal for dynamodb if any macros exist
-        messages_dec = json.loads(json.dumps(messages), parse_float=Decimal)
+        messages_dec = json.loads(json.dumps(messages_for_db), parse_float=Decimal)
 
         db.save_chat_history(user_id, chat_id, title, messages_dec)
 
         return LambdaManager.success_response({
             "message": "Chat history saved.",
-            "chat_id": chat_id
+            "chat_id": chat_id,
+            "messages": messages # Return the array with presigned URLs to update frontend state
         })
 
     except Exception as e:
@@ -364,6 +404,17 @@ def get_chat_histories_endpoint(event, context):
             return LambdaManager.error_response("Unauthorized", 401)
 
         histories = db.get_chat_histories(user_id)
+
+        # Hydrate messages with fresh presigned URLs for the UI
+        for history in histories:
+            messages = history.get('Messages', [])
+            for msg in messages:
+                if msg.get('s3_image_key'):
+                    try:
+                        msg['image'] = s3.get_presigned_url(msg['s3_image_key'])
+                    except Exception as e:
+                        print(f"Failed to generate presigned URL: {e}")
+                        pass
 
         return LambdaManager.success_response({"histories": histories})
 

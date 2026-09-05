@@ -3,7 +3,7 @@ import { API_URL } from './config';
 import './RecipeChat.css';
 
 const PANTRY_STAPLES = [
-    "Salt", "Black Pepper", "Olive Oil", "Vegetable Oil", "Garlic", 
+    "Salt", "Black Pepper", "Olive Oil", "Vegetable Oil", "Garlic",
     "Onion", "Butter", "Flour", "Sugar", "Soy Sauce", "Milk", "Eggs"
 ];
 
@@ -66,6 +66,9 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
             const data = await res.json();
             if (res.ok) {
                 if (!currentChatId) setChatId(data.chat_id);
+                if (data.messages) {
+                    setHistory(data.messages); // Update state to replace base64 with S3 URLs
+                }
                 fetchHistories(); // Refresh sidebar
             }
         } catch (e) {
@@ -90,7 +93,7 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId, chat_id: idToDelete })
             });
-            
+
             if (res.ok) {
                 setSavedChats(prev => prev.filter(h => h.ChatId !== idToDelete));
                 if (chatId === idToDelete) handleNewChat();
@@ -113,7 +116,33 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                setSelectedImage(reader.result);
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1024;
+                    const MAX_HEIGHT = 1024;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    setSelectedImage(compressedDataUrl);
+                };
+                img.src = reader.result;
             };
             reader.readAsDataURL(file);
         }
@@ -127,13 +156,13 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
     const handleSend = async () => {
         if (!message.trim() && !selectedImage) return;
 
-        const newUserMsg = { 
-            role: 'user', 
-            content: message || "Analyze this image.", 
-            image: selectedImage 
+        const newUserMsg = {
+            role: 'user',
+            content: message.trim(),
+            image: selectedImage
         };
         const updatedHistory = [...history, newUserMsg];
-        
+
         setHistory(updatedHistory);
         setMessage('');
         setSelectedImage(null);
@@ -147,7 +176,7 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
             const response = await fetch(`${API_URL}/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     message: newUserMsg.content,
                     image_data: newUserMsg.image,
                     remaining_macros: remainingMacros,
@@ -159,8 +188,8 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
             const data = await response.json();
 
             if (response.ok) {
-                const aiMsg = { 
-                    role: 'assistant', 
+                const aiMsg = {
+                    role: 'assistant',
                     content: data.bot_message,
                     recipe: data.is_recipe ? data : null
                 };
@@ -237,8 +266,8 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                                     <h4>{h.Title}</h4>
                                     <span className="date">{new Date(h.UpdatedAt).toLocaleDateString()}</span>
                                 </div>
-                                <button 
-                                    className="delete-chat-btn" 
+                                <button
+                                    className="delete-chat-btn"
                                     onClick={(e) => handleDeleteChat(e, h.ChatId)}
                                     title="Delete Chat"
                                 >
@@ -256,14 +285,14 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                     <div className="kitchen-profile-modal" onClick={e => e.stopPropagation()}>
                         <h2>🍽️ Kitchen Profile</h2>
                         <p>Tell the AI Chef about your kitchen so it can give you better recipes!</p>
-                        
+
                         <div className="profile-section">
                             <h3>Pantry Staples</h3>
                             <p className="section-desc">Select ingredients you always have at home.</p>
                             <div className="staples-grid">
                                 {PANTRY_STAPLES.map(staple => (
-                                    <button 
-                                        key={staple} 
+                                    <button
+                                        key={staple}
                                         className={`staple-btn ${kitchenProfile.staples.includes(staple) ? 'selected' : ''}`}
                                         onClick={() => toggleStaple(staple)}
                                     >
@@ -275,10 +304,10 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
 
                         <div className="profile-section">
                             <h3>Allergies & Dietary Restrictions</h3>
-                            <textarea 
+                            <textarea
                                 placeholder="E.g., Peanuts, Gluten, Dairy..."
                                 value={kitchenProfile.allergies}
-                                onChange={(e) => setKitchenProfile(prev => ({...prev, allergies: e.target.value}))}
+                                onChange={(e) => setKitchenProfile(prev => ({ ...prev, allergies: e.target.value }))}
                             />
                         </div>
 
@@ -317,7 +346,7 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                             <p className="suggestion">Try uploading a photo of your ingredients.</p>
                         </div>
                     )}
-                    
+
                     {history.map((msg, idx) => (
                         <div key={idx} className={`chat-bubble-container ${msg.role}`}>
                             <div className={`chat-bubble ${msg.role}`}>
@@ -326,22 +355,22 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                                         <img src={msg.image} alt="User upload" />
                                     </div>
                                 )}
-                                <p className="chat-text">{msg.content}</p>
-                                
+                                {msg.content && <p className="chat-text">{msg.content}</p>}
+
                                 {msg.recipe && (
                                     <div className="recipe-card">
                                         {msg.recipe.image_url ? (
-                                            <div style={{width: '100%', height: '200px', marginBottom: '15px', borderRadius: '10px', overflow: 'hidden'}}>
-                                                <img src={msg.recipe.image_url} alt="Recipe" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                                            <div style={{ width: '100%', height: '200px', marginBottom: '15px', borderRadius: '10px', overflow: 'hidden' }}>
+                                                <img src={msg.recipe.image_url} alt="Recipe" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                             </div>
                                         ) : msg.recipe.image_error ? (
-                                            <div style={{width: '100%', padding: '10px', marginBottom: '15px', backgroundColor: 'rgba(255,0,0,0.1)', color: '#ff6b6b', borderRadius: '10px', fontSize: '0.9em'}}>
+                                            <div style={{ width: '100%', padding: '10px', marginBottom: '15px', backgroundColor: 'rgba(255,0,0,0.1)', color: '#ff6b6b', borderRadius: '10px', fontSize: '0.9em' }}>
                                                 <strong>Image Error:</strong> {msg.recipe.image_error}
                                             </div>
                                         ) : null}
                                         <h3>{msg.recipe.title}</h3>
                                         <p className="recipe-desc">{msg.recipe.description}</p>
-                                        
+
                                         <div className="recipe-macros">
                                             <span>{msg.recipe.macros.calories} kcal</span>
                                             <span>P: {msg.recipe.macros.protein}g</span>
@@ -364,19 +393,20 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                                             </div>
                                         </div>
 
-                                        <button 
+                                        <button
                                             className={`save-btn ${msg.saved ? 'saved' : ''}`}
-                                            onClick={() => !msg.saved && handleSaveRecipe(msg.recipe, idx)}
-                                            disabled={isSaving || msg.saved}
+                                            onClick={() => handleSaveRecipe(msg.recipe, idx)}
+                                            disabled={isSaving}
+                                            title="Click to save again if you removed it from your cookbook"
                                         >
-                                            {msg.saved ? '✓ Saved to Cookbook' : (isSaving ? 'Generating Image & Saving...' : '💾 Save to Cookbook')}
+                                            {msg.saved ? '✓ Saved to Cookbook (Click to save again)' : (isSaving ? 'Generating Image & Saving...' : '💾 Save to Cookbook')}
                                         </button>
                                     </div>
                                 )}
                             </div>
                         </div>
                     ))}
-                    
+
                     {isLoading && (
                         <div className="chat-bubble-container assistant">
                             <div className="chat-bubble loading-bubble">
@@ -399,9 +429,9 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                     <div className="input-row">
                         <label className="upload-btn">
                             📷
-                            <input 
-                                type="file" 
-                                accept="image/*" 
+                            <input
+                                type="file"
+                                accept="image/*"
                                 capture="environment"
                                 ref={fileInputRef}
                                 onChange={handleImageChange}
@@ -409,8 +439,8 @@ const RecipeChat = ({ user, remainingMacros, onBack }) => {
                                 disabled={isLoading || isSaving}
                             />
                         </label>
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
